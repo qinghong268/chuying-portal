@@ -1,0 +1,10 @@
+{
+  "name": "chuying-portal",
+  "private": true,
+  "workspaces": ["shared", "server", "client"],
+  "scripts": {
+    "dev": "npm run dev -w server & npm run dev -w client",
+    "test": "npm run test -w server",
+    "build": "npm run build -w shared && npm run build -w client && npm run build -w server"
+  }
+}
