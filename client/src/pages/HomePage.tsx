@@ -35,19 +35,30 @@ export function HomePage() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      try {
-        const [home, featuredActs, featuredCourses] = await Promise.all([
-          api<{ blocks: ContentBlock[] }>("/api/content/home"),
-          api<{ activities: ActivitySummary[] }>("/api/activities/featured?limit=3"),
-          api<{ courses: CourseSummary[] }>("/api/courses/featured?limit=3"),
-        ]);
-        if (cancelled) return;
-        setBlocks(home.blocks);
-        setActivities(featuredActs.activities.slice(0, 3));
-        setCourses(featuredCourses.courses.slice(0, 3));
-      } catch {
-        if (!cancelled) setError("首页内容加载失败，已展示默认宣传文案。");
+      const results = await Promise.allSettled([
+        api<{ blocks: ContentBlock[] }>("/api/content/home"),
+        api<{ activities: ActivitySummary[] }>("/api/activities/featured?limit=3"),
+        api<{ courses: CourseSummary[] }>("/api/courses/featured?limit=3"),
+      ]);
+      if (cancelled) return;
+
+      const home =
+        results[0].status === "fulfilled" ? results[0].value : { blocks: [] };
+      const featuredActs =
+        results[1].status === "fulfilled"
+          ? results[1].value
+          : { activities: [] as ActivitySummary[] };
+      const featuredCourses =
+        results[2].status === "fulfilled"
+          ? results[2].value
+          : { courses: [] as CourseSummary[] };
+
+      if (results.some((r) => r.status === "rejected")) {
+        setError("首页部分内容加载失败，已展示可用内容与默认宣传文案。");
       }
+      setBlocks(home.blocks);
+      setActivities(featuredActs.activities.slice(0, 3));
+      setCourses(featuredCourses.courses.slice(0, 3));
     })();
     return () => {
       cancelled = true;

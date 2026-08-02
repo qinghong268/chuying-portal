@@ -159,10 +159,14 @@ pointAppsRouter.get("/enrollments", requireAuth, requireRole("eagle"), (req, res
       now,
     });
 
-    let canApplyType1 = eligibility.ok && !blocked;
+    const activityPublished = row.activity_status === "published";
+    let canApplyType1 = eligibility.ok && !blocked && activityPublished;
     let applyBlockedReason: string | undefined;
 
-    if (blocked) {
+    if (!activityPublished) {
+      canApplyType1 = false;
+      applyBlockedReason = "活动未发布";
+    } else if (blocked) {
       canApplyType1 = false;
       applyBlockedReason = "已有待审或已通过的心得申请";
     } else if (!eligibility.ok) {
@@ -191,7 +195,7 @@ pointAppsRouter.get("/enrollments", requireAuth, requireRole("eagle"), (req, res
       startAt: row.start_at,
       endAt: row.end_at,
       targetPoints: row.target_points,
-      activityPublished: row.activity_status === "published",
+      activityPublished,
       enrolledAt: row.enrolled_at,
       status: row.enrollment_status,
       progressPercent: row.mode === "online" ? progressPercent : undefined,

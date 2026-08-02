@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "dev": "concurrently -n server,client -c teal,magenta \"npm run dev -w server\" \"npm run dev -w client\"",
+    "dev:all": "npm run dev",
     "dev:server": "npm run dev -w server",
     "dev:client": "npm run dev -w client",
     "test": "npm run test -w server",
