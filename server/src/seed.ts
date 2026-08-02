@@ -88,11 +88,13 @@ export function runSeed(): void {
   }
 
   const insertBlock = database.prepare(
-    `INSERT INTO content_blocks (block_key, title, body, status, updated_at)
-     VALUES (?, ?, ?, 'published', ?)`,
+    `INSERT INTO content_blocks (block_key, title, body, draft_title, draft_body, status, updated_at)
+     VALUES (?, ?, ?, ?, ?, 'published', ?)`,
   );
   insertBlock.run(
     "home_hero",
+    "雏鹰计划",
+    "欢迎了解 SoftTong 雏鹰计划。计划详情与宣传素材由运营团队后续补充。",
     "雏鹰计划",
     "欢迎了解 SoftTong 雏鹰计划。计划详情与宣传素材由运营团队后续补充。",
     ts,
@@ -101,10 +103,14 @@ export function runSeed(): void {
     "home_plan_promo",
     "雏鹰计划宣传",
     "雏鹰计划面向青年人才，提供学习、实践与成长机会。具体方案与细则以正式发布为准。",
+    "雏鹰计划宣传",
+    "雏鹰计划面向青年人才，提供学习、实践与成长机会。具体方案与细则以正式发布为准。",
     ts,
   );
   insertBlock.run(
     "home_company_promo",
+    "软通智慧",
+    "软通智慧致力于数字化与智能化解决方案。公司介绍与案例素材由运营团队后续补充。",
     "软通智慧",
     "软通智慧致力于数字化与智能化解决方案。公司介绍与案例素材由运营团队后续补充。",
     ts,

@@ -9,16 +9,26 @@ interface ContentBlockRow {
   block_key: string;
   title: string;
   body: string;
+  draft_title: string | null;
+  draft_body: string | null;
   status: "draft" | "published";
   updated_at: number;
 }
 
-function toPublic(row: ContentBlockRow) {
+function draftTitle(row: ContentBlockRow): string {
+  return row.draft_title ?? row.title;
+}
+
+function draftBody(row: ContentBlockRow): string {
+  return row.draft_body ?? row.body;
+}
+
+function toAdminBlock(row: ContentBlockRow) {
   return {
     id: row.id,
     key: row.block_key,
-    title: row.title,
-    body: row.body,
+    title: draftTitle(row),
+    body: draftBody(row),
     status: row.status,
     updatedAt: row.updated_at,
   };
@@ -51,7 +61,7 @@ adminContentRouter.get("/blocks", (req, res) => {
   sql += ` ORDER BY id ASC`;
 
   const rows = getDb().prepare(sql).all(...params) as ContentBlockRow[];
-  res.json({ blocks: rows.map(toPublic) });
+  res.json({ blocks: rows.map(toAdminBlock) });
 });
 
 adminContentRouter.get("/blocks/:id", (req, res) => {
@@ -70,7 +80,7 @@ adminContentRouter.get("/blocks/:id", (req, res) => {
     return;
   }
 
-  res.json({ block: toPublic(row) });
+  res.json({ block: toAdminBlock(row) });
 });
 
 adminContentRouter.put("/blocks/:id", (req, res) => {
@@ -95,10 +105,11 @@ adminContentRouter.put("/blocks/:id", (req, res) => {
     return;
   }
 
-  const title = parsed.data.title ?? existing.title;
-  const body = parsed.data.body ?? existing.body;
-  // A02: 存草稿不改变前台已发布内容 — PUT never demotes published→draft
-  // and never promotes to published (only POST .../publish does).
+  const nextDraftTitle =
+    parsed.data.title !== undefined ? parsed.data.title : draftTitle(existing);
+  const nextDraftBody =
+    parsed.data.body !== undefined ? parsed.data.body : draftBody(existing);
+  // A02: PUT never demotes published→draft and never promotes (only POST .../publish).
   let status = existing.status;
   if (
     existing.status !== "published" &&
@@ -112,16 +123,16 @@ adminContentRouter.put("/blocks/:id", (req, res) => {
   getDb()
     .prepare(
       `UPDATE content_blocks
-       SET title = ?, body = ?, status = ?, updated_at = ?
+       SET draft_title = ?, draft_body = ?, status = ?, updated_at = ?
        WHERE id = ?`,
     )
-    .run(title, body, status, updatedAt, id);
+    .run(nextDraftTitle, nextDraftBody, status, updatedAt, id);
 
   const updated = getDb()
     .prepare(`SELECT * FROM content_blocks WHERE id = ?`)
     .get(id) as ContentBlockRow;
 
-  res.json({ block: toPublic(updated) });
+  res.json({ block: toAdminBlock(updated) });
 });
 
 adminContentRouter.post("/blocks/:id/publish", (req, res) => {
@@ -140,16 +151,29 @@ adminContentRouter.post("/blocks/:id/publish", (req, res) => {
     return;
   }
 
+  const publishedTitle = draftTitle(existing);
+  const publishedBody = draftBody(existing);
   const updatedAt = Date.now();
+
   getDb()
     .prepare(
-      `UPDATE content_blocks SET status = 'published', updated_at = ? WHERE id = ?`,
+      `UPDATE content_blocks
+       SET title = ?, body = ?, draft_title = ?, draft_body = ?,
+           status = 'published', updated_at = ?
+       WHERE id = ?`,
     )
-    .run(updatedAt, id);
+    .run(
+      publishedTitle,
+      publishedBody,
+      publishedTitle,
+      publishedBody,
+      updatedAt,
+      id,
+    );
 
   const updated = getDb()
     .prepare(`SELECT * FROM content_blocks WHERE id = ?`)
     .get(id) as ContentBlockRow;
 
-  res.json({ block: toPublic(updated) });
+  res.json({ block: toAdminBlock(updated) });
 });

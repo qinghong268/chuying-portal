@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS content_blocks (
   block_key TEXT NOT NULL UNIQUE,
   title TEXT NOT NULL,
   body TEXT NOT NULL,
+  draft_title TEXT,
+  draft_body TEXT,
   status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'published')),
   updated_at INTEGER NOT NULL
 );

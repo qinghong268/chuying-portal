@@ -95,6 +95,12 @@ describe("admin content CMS smoke", () => {
     const blockId = listRes.body.blocks[0].id as number;
     expect(listRes.body.blocks[0].status).toBe("published");
 
+    const homeBefore = await request(app).get("/api/content/home");
+    const publishedBlock = homeBefore.body.blocks.find(
+      (b: { key: string }) => b.key === listRes.body.blocks[0].key,
+    );
+    expect(publishedBlock).toBeDefined();
+
     // A02: PUT with status draft must not unpublish live content
     const putRes = await admin.put(`/api/admin/content/blocks/${blockId}`).send({
       title: "更新标题",
@@ -106,11 +112,27 @@ describe("admin content CMS smoke", () => {
     expect(putRes.body.block.body).toBe("更新正文");
     expect(putRes.body.block.status).toBe("published");
 
+    const homeAfterDraft = await request(app).get("/api/content/home");
+    const liveAfterDraft = homeAfterDraft.body.blocks.find(
+      (b: { key: string }) => b.key === listRes.body.blocks[0].key,
+    );
+    expect(liveAfterDraft.title).toBe(publishedBlock.title);
+    expect(liveAfterDraft.body).toBe(publishedBlock.body);
+
     const pubRes = await admin.post(
       `/api/admin/content/blocks/${blockId}/publish`,
     );
     expect(pubRes.status).toBe(200);
     expect(pubRes.body.block.status).toBe("published");
+    expect(pubRes.body.block.title).toBe("更新标题");
+    expect(pubRes.body.block.body).toBe("更新正文");
+
+    const homeAfterPublish = await request(app).get("/api/content/home");
+    const liveAfterPublish = homeAfterPublish.body.blocks.find(
+      (b: { key: string }) => b.key === listRes.body.blocks[0].key,
+    );
+    expect(liveAfterPublish.title).toBe("更新标题");
+    expect(liveAfterPublish.body).toBe("更新正文");
   });
 });
 

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
 import { createApp } from "../src/app";
-import { migrate, seed } from "../src/db";
+import { migrate, seed, getDb } from "../src/db";
 
 beforeAll(() => {
   process.env.DATABASE_PATH = ":memory:";
@@ -79,5 +79,35 @@ describe("POST /api/auth/logout", () => {
     expect(logoutRes.status).toBe(200);
     const meRes = await agent.get("/api/auth/me");
     expect(meRes.status).toBe(401);
+  });
+});
+
+describe("disabled user session invalidation", () => {
+  it("disabled user gets 401 on protected routes with existing cookie", async () => {
+    const app = createApp();
+    const eagle = request.agent(app);
+    await eagle.post("/api/auth/demo-login").send({ role: "eagle" });
+    const meBefore = await eagle.get("/api/auth/me");
+    expect(meBefore.status).toBe(200);
+
+    const eagleRow = getDb()
+      .prepare(`SELECT id FROM users WHERE email = 'eagle@demo'`)
+      .get() as { id: number };
+
+    const superAdmin = request.agent(app);
+    await superAdmin.post("/api/auth/demo-login").send({ role: "super_admin" });
+    const disableRes = await superAdmin.post(
+      `/api/admin/users/${eagleRow.id}/disable`,
+    );
+    expect(disableRes.status).toBe(200);
+
+    const meAfter = await eagle.get("/api/auth/me");
+    expect(meAfter.status).toBe(401);
+
+    const activitiesRes = await eagle.get("/api/activities");
+    expect(activitiesRes.status).toBe(200);
+
+    const enrollRes = await eagle.post("/api/activities/1/enroll");
+    expect(enrollRes.status).toBe(401);
   });
 });

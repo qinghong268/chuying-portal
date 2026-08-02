@@ -1,12 +1,21 @@
 import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import type { UserRole } from "@chuying/shared";
+import { getDb } from "../connection";
 
 export const AUTH_COOKIE_NAME = "chuying_auth";
 
 export interface AuthJwtPayload {
   sub: number;
   role: UserRole;
+}
+
+interface DbUserRow {
+  id: number;
+  email: string;
+  role: UserRole;
+  display_name: string;
+  status: string;
 }
 
 function getJwtSecret(): string {
@@ -37,46 +46,54 @@ export function getTokenFromRequest(req: Request): string | undefined {
   return req.cookies?.[AUTH_COOKIE_NAME] as string | undefined;
 }
 
-export function optionalAuth(req: Request, _res: Response, next: NextFunction): void {
+function loadUserById(id: number): DbUserRow | undefined {
+  return getDb()
+    .prepare(
+      `SELECT id, email, role, display_name, status
+       FROM users WHERE id = ?`,
+    )
+    .get(id) as DbUserRow | undefined;
+}
+
+function setAuthUserFromDb(req: Request, user: DbUserRow): void {
+  req.authUser = {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    displayName: user.display_name,
+  };
+}
+
+function resolveActiveAuthUser(req: Request): boolean {
   const token = getTokenFromRequest(req);
   if (!token) {
-    next();
-    return;
+    return false;
   }
 
   try {
     const payload = verifyAuthToken(token);
-    req.authUser = {
-      id: payload.sub,
-      email: "",
-      role: payload.role,
-      displayName: "",
-    };
+    const user = loadUserById(payload.sub);
+    if (!user || user.status !== "active") {
+      return false;
+    }
+    setAuthUserFromDb(req, user);
+    return true;
   } catch {
-    // Invalid token — treat as guest
+    return false;
   }
+}
+
+export function optionalAuth(req: Request, _res: Response, next: NextFunction): void {
+  resolveActiveAuthUser(req);
   next();
 }
 
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
-  const token = getTokenFromRequest(req);
-  if (!token) {
+  if (!resolveActiveAuthUser(req)) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
-
-  try {
-    const payload = verifyAuthToken(token);
-    req.authUser = {
-      id: payload.sub,
-      email: "",
-      role: payload.role,
-      displayName: "",
-    };
-    next();
-  } catch {
-    res.status(401).json({ error: "Unauthorized" });
-  }
+  next();
 }
 
 export function requireRole(...roles: UserRole[]) {
