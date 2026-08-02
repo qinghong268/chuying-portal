@@ -1,0 +1,9 @@
+﻿node_modules/
+dist/
+build/
+*.local
+.env
+.env.*
+server/data/*.db
+.DS_Store
+.agent-scratch/
