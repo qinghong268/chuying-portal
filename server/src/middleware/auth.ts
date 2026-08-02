@@ -37,6 +37,27 @@ export function getTokenFromRequest(req: Request): string | undefined {
   return req.cookies?.[AUTH_COOKIE_NAME] as string | undefined;
 }
 
+export function optionalAuth(req: Request, _res: Response, next: NextFunction): void {
+  const token = getTokenFromRequest(req);
+  if (!token) {
+    next();
+    return;
+  }
+
+  try {
+    const payload = verifyAuthToken(token);
+    req.authUser = {
+      id: payload.sub,
+      email: "",
+      role: payload.role,
+      displayName: "",
+    };
+  } catch {
+    // Invalid token — treat as guest
+  }
+  next();
+}
+
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
   const token = getTokenFromRequest(req);
   if (!token) {
