@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { UserRole } from "@chuying/shared";
+import type { PermissionCode, UserRole } from "@chuying/shared";
 import { api } from "../api/client";
 
 export interface AuthUser {
@@ -16,6 +16,7 @@ export interface AuthUser {
   role: UserRole;
   displayName: string;
   status: string;
+  permissions?: PermissionCode[];
 }
 
 interface AuthContextValue {

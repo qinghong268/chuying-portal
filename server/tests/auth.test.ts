@@ -48,6 +48,26 @@ describe("GET /api/auth/me", () => {
     expect(res.body.user.role).toBe("eagle");
     expect(res.body.user).not.toHaveProperty("password_hash");
   });
+
+  it("me returns permissions for admin", async () => {
+    const app = createApp();
+    const agent = request.agent(app);
+    await agent.post("/api/auth/demo-login").send({ role: "admin" });
+    const res = await agent.get("/api/auth/me");
+    expect(res.status).toBe(200);
+    expect(res.body.user.permissions).toBeInstanceOf(Array);
+    expect(res.body.user.permissions).not.toContain("permission");
+    expect(res.body.user.permissions).toContain("content");
+  });
+
+  it("me returns all permissions for super_admin", async () => {
+    const app = createApp();
+    const agent = request.agent(app);
+    await agent.post("/api/auth/demo-login").send({ role: "super_admin" });
+    const res = await agent.get("/api/auth/me");
+    expect(res.status).toBe(200);
+    expect(res.body.user.permissions).toContain("permission");
+  });
 });
 
 describe("POST /api/auth/logout", () => {

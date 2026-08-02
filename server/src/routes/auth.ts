@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { z } from "zod";
-import type { UserRole } from "@chuying/shared";
+import type { PermissionCode, UserRole } from "@chuying/shared";
 import { getDb } from "../connection";
+import { getUserPermissions } from "../lib/userPermissions";
 import {
   AUTH_COOKIE_NAME,
   authCookieOptions,
@@ -28,13 +29,20 @@ interface UserRow {
 }
 
 function toPublicUser(row: UserRow) {
-  return {
+  const base = {
     id: row.id,
     email: row.email,
     role: row.role,
     displayName: row.display_name,
     status: row.status,
   };
+  if (row.role === "admin" || row.role === "super_admin") {
+    return {
+      ...base,
+      permissions: getUserPermissions(row.id, row.role) as PermissionCode[],
+    };
+  }
+  return base;
 }
 
 function findDemoUserByRole(role: UserRole): UserRow | undefined {

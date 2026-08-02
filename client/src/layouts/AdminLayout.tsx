@@ -1,20 +1,11 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { visibleNavItems, isAdminUser } from "../admin/permissions";
 import styles from "./AdminLayout.module.css";
-
-const SIDEBAR: { to: string; label: string; end?: boolean }[] = [
-  { to: "/admin", label: "控制台", end: true },
-  { to: "/admin/content", label: "内容运营" },
-  { to: "/admin/join", label: "加入审核" },
-  { to: "/admin/activities", label: "活动管理" },
-  { to: "/admin/point-types", label: "积分类型" },
-  { to: "/admin/point-apps", label: "积分审批" },
-  { to: "/admin/users", label: "用户管理" },
-  { to: "/admin/permissions", label: "权限管理" },
-];
 
 export function AdminLayout() {
   const { user, loading, demoLogin, logout } = useAuth();
+  const navItems = visibleNavItems(user);
 
   return (
     <div className={styles.shell} data-density="admin">
@@ -26,13 +17,22 @@ export function AdminLayout() {
           ) : user ? (
             <span>{user.displayName}</span>
           ) : (
-            <button
-              type="button"
-              className={styles.ghostBtn}
-              onClick={() => void demoLogin("admin")}
-            >
-              演示管理员
-            </button>
+            <>
+              <button
+                type="button"
+                className={styles.ghostBtn}
+                onClick={() => void demoLogin("admin")}
+              >
+                演示管理员
+              </button>
+              <button
+                type="button"
+                className={styles.ghostBtn}
+                onClick={() => void demoLogin("super_admin")}
+              >
+                演示超管
+              </button>
+            </>
           )}
           <NavLink to="/" className={styles.topLink}>
             回前台
@@ -46,7 +46,7 @@ export function AdminLayout() {
       </header>
       <div className={styles.body}>
         <aside className={styles.sidebar} aria-label="后台导航">
-          {SIDEBAR.map((item) => (
+          {(loading || isAdminUser(user) ? navItems : []).map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
