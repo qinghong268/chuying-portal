@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "tsc && node -e \"require('fs').copyFileSync('src/migrate.sql','dist/migrate.sql')\"",
     "test": "vitest run"
   },
   "dependencies": {
