@@ -3,6 +3,10 @@ import { z } from "zod";
 import { getDb } from "../connection";
 import { requireAuth, requireRole } from "../middleware/auth";
 import {
+  OFFLINE_APPLY_WINDOW_HOURS,
+  WATCH_PROGRESS_THRESHOLD,
+} from "@chuying/shared";
+import {
   canApplyActivityReflection,
   isReflectionLengthOk,
 } from "../domain/eligibility";
@@ -116,6 +120,89 @@ const type2Schema = z.object({
 const createSchema = z.union([type1Schema, type2Schema]);
 
 export const pointAppsRouter = Router();
+
+pointAppsRouter.get("/enrollments", requireAuth, requireRole("eagle"), (req, res) => {
+  const userId = req.authUser!.id;
+  const now = Date.now();
+
+  const rows = getDb()
+    .prepare(
+      `SELECT e.id AS enrollment_id, e.enrolled_at, e.status AS enrollment_status,
+              a.id AS activity_id, a.title, a.mode, a.start_at, a.end_at,
+              a.target_points, a.status AS activity_status
+       FROM enrollments e
+       INNER JOIN activities a ON a.id = e.activity_id
+       WHERE e.user_id = ? AND e.status = 'enrolled'
+       ORDER BY e.enrolled_at DESC`,
+    )
+    .all(userId) as Array<{
+    enrollment_id: number;
+    enrolled_at: number;
+    enrollment_status: string;
+    activity_id: number;
+    title: string;
+    mode: "online" | "offline";
+    start_at: number;
+    end_at: number;
+    target_points: number;
+    activity_status: string;
+  }>;
+
+  const enrollments = rows.map((row) => {
+    const { progressPercent } = getEnrollmentProgress(userId, row.activity_id);
+    const blocked = hasBlockingType1Application(userId, row.activity_id);
+    const eligibility = canApplyActivityReflection({
+      enrolled: true,
+      mode: row.mode,
+      progressPercent,
+      activityEndAt: row.end_at,
+      now,
+    });
+
+    let canApplyType1 = eligibility.ok && !blocked;
+    let applyBlockedReason: string | undefined;
+
+    if (blocked) {
+      canApplyType1 = false;
+      applyBlockedReason = "已有待审或已通过的心得申请";
+    } else if (!eligibility.ok) {
+      canApplyType1 = false;
+      if (row.mode === "online") {
+        applyBlockedReason = `进度需达到 ${WATCH_PROGRESS_THRESHOLD}%`;
+      } else if (now < row.end_at) {
+        applyBlockedReason = "活动结束后 24 小时内可申请";
+      } else {
+        applyBlockedReason = "申请窗口已关闭";
+      }
+    }
+
+    const windowEnd =
+      row.end_at + OFFLINE_APPLY_WINDOW_HOURS * 60 * 60 * 1000;
+    const offlineWindowRemainingMs =
+      row.mode === "offline" && now >= row.end_at && now <= windowEnd
+        ? windowEnd - now
+        : null;
+
+    return {
+      id: row.enrollment_id,
+      activityId: row.activity_id,
+      activityTitle: row.title,
+      activityMode: row.mode,
+      startAt: row.start_at,
+      endAt: row.end_at,
+      targetPoints: row.target_points,
+      activityPublished: row.activity_status === "published",
+      enrolledAt: row.enrolled_at,
+      status: row.enrollment_status,
+      progressPercent: row.mode === "online" ? progressPercent : undefined,
+      canApplyType1,
+      applyBlockedReason,
+      offlineWindowRemainingMs,
+    };
+  });
+
+  res.json({ enrollments });
+});
 
 pointAppsRouter.get(
   "/point-applications/eligible-activities",

@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthContext";
 import { PortalLayout } from "./layouts/PortalLayout";
+import { MeLayout } from "./layouts/MeLayout";
 import { AdminLayout } from "./layouts/AdminLayout";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
 import { HomePage } from "./pages/HomePage";
@@ -11,6 +12,12 @@ import { CoursesPage } from "./pages/CoursesPage";
 import { CourseDetailPage } from "./pages/CourseDetailPage";
 import { JoinPage } from "./pages/JoinPage";
 import { LoginPage } from "./pages/LoginPage";
+import { MeOverviewPage } from "./pages/me/MeOverviewPage";
+import { MeEnrollmentsPage } from "./pages/me/MeEnrollmentsPage";
+import { MeApplicationsPage } from "./pages/me/MeApplicationsPage";
+import { MePointsPage } from "./pages/me/MePointsPage";
+import { NewApplicationPage } from "./pages/me/NewApplicationPage";
+import { ApplicationDetailPage } from "./pages/me/ApplicationDetailPage";
 
 export default function App() {
   return (
@@ -26,11 +33,14 @@ export default function App() {
             <Route path="courses/:id" element={<CourseDetailPage />} />
             <Route path="join" element={<JoinPage />} />
             <Route path="login" element={<LoginPage />} />
-            <Route path="me" element={<PlaceholderPage title="个人中心" />} />
-            <Route
-              path="me/*"
-              element={<PlaceholderPage title="个人中心" note="个人中心子页由后续任务实现。" />}
-            />
+            <Route path="me" element={<MeLayout />}>
+              <Route index element={<MeOverviewPage />} />
+              <Route path="enrollments" element={<MeEnrollmentsPage />} />
+              <Route path="applications" element={<MeApplicationsPage />} />
+              <Route path="applications/new" element={<NewApplicationPage />} />
+              <Route path="applications/:id" element={<ApplicationDetailPage />} />
+              <Route path="points" element={<MePointsPage />} />
+            </Route>
           </Route>
           <Route path="admin" element={<AdminLayout />}>
             <Route index element={<PlaceholderPage title="控制台" />} />
