@@ -18,7 +18,9 @@ adminDashboardRouter.get("/summary", (_req, res) => {
 
   const eagleCount = (
     db
-      .prepare(`SELECT COUNT(*) AS c FROM users WHERE role = 'eagle'`)
+      .prepare(
+        `SELECT COUNT(*) AS c FROM users WHERE role = 'eagle' AND status = 'active'`,
+      )
       .get() as { c: number }
   ).c;
 

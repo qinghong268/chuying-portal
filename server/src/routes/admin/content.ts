@@ -97,7 +97,16 @@ adminContentRouter.put("/blocks/:id", (req, res) => {
 
   const title = parsed.data.title ?? existing.title;
   const body = parsed.data.body ?? existing.body;
-  const status = parsed.data.status ?? existing.status;
+  // A02: 存草稿不改变前台已发布内容 — PUT never demotes published→draft
+  // and never promotes to published (only POST .../publish does).
+  let status = existing.status;
+  if (
+    existing.status !== "published" &&
+    parsed.data.status !== undefined &&
+    parsed.data.status !== "published"
+  ) {
+    status = parsed.data.status;
+  }
   const updatedAt = Date.now();
 
   getDb()

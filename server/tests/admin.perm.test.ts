@@ -93,13 +93,18 @@ describe("admin content CMS smoke", () => {
     expect(listRes.body.blocks.length).toBeGreaterThan(0);
 
     const blockId = listRes.body.blocks[0].id as number;
+    expect(listRes.body.blocks[0].status).toBe("published");
+
+    // A02: PUT with status draft must not unpublish live content
     const putRes = await admin.put(`/api/admin/content/blocks/${blockId}`).send({
       title: "更新标题",
       body: "更新正文",
       status: "draft",
     });
     expect(putRes.status).toBe(200);
-    expect(putRes.body.block.status).toBe("draft");
+    expect(putRes.body.block.title).toBe("更新标题");
+    expect(putRes.body.block.body).toBe("更新正文");
+    expect(putRes.body.block.status).toBe("published");
 
     const pubRes = await admin.post(
       `/api/admin/content/blocks/${blockId}/publish`,
@@ -183,9 +188,17 @@ describe("admin activities + dashboard + users", () => {
     expect(enrollRes.status).toBe(200);
     expect(Array.isArray(enrollRes.body.enrollments)).toBe(true);
 
+    const expectedEagles = (
+      getDb()
+        .prepare(
+          `SELECT COUNT(*) AS c FROM users WHERE role = 'eagle' AND status = 'active'`,
+        )
+        .get() as { c: number }
+    ).c;
+
     const dashRes = await admin.get("/api/admin/dashboard/summary");
     expect(dashRes.status).toBe(200);
-    expect(typeof dashRes.body.eagleCount).toBe("number");
+    expect(dashRes.body.eagleCount).toBe(expectedEagles);
     expect(typeof dashRes.body.pendingJoinCount).toBe("number");
     expect(typeof dashRes.body.pendingPointAppCount).toBe("number");
     expect(typeof dashRes.body.activeActivityCount).toBe("number");
@@ -194,5 +207,32 @@ describe("admin activities + dashboard + users", () => {
     const usersRes = await admin.get("/api/admin/users");
     expect(usersRes.status).toBe(200);
     expect(Array.isArray(usersRes.body.users)).toBe(true);
+  });
+
+  it("non-super admin cannot disable a super_admin", async () => {
+    const app = createApp();
+    const now = Date.now();
+
+    // Ensure ≥2 active supers so last-super guard alone would not block
+    getDb()
+      .prepare(
+        `INSERT INTO users (email, password_hash, role, display_name, status, created_at)
+         VALUES (?, 'x', 'super_admin', ?, 'active', ?)`,
+      )
+      .run(`super-extra-${now}@demo`, "额外超级管理员", now);
+
+    const superRow = getDb()
+      .prepare(`SELECT id FROM users WHERE email = 'super@demo'`)
+      .get() as { id: number };
+
+    const admin = await loginAs(app, "admin");
+    const res = await admin.post(`/api/admin/users/${superRow.id}/disable`);
+    expect(res.status).toBe(403);
+    expect(String(res.body.error)).toMatch(/super admin/i);
+
+    const stillActive = getDb()
+      .prepare(`SELECT status FROM users WHERE id = ?`)
+      .get(superRow.id) as { status: string };
+    expect(stillActive.status).toBe("active");
   });
 });

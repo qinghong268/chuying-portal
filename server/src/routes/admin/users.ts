@@ -113,6 +113,12 @@ adminUsersRouter.post("/:id/disable", (req, res) => {
   }
 
   if (user.role === "super_admin") {
+    // PRD A11: 非超管不可停用超级管理员
+    if (req.authUser!.role !== "super_admin") {
+      res.status(403).json({ error: "Only super admin can disable a super admin" });
+      return;
+    }
+
     const activeSupers = getDb()
       .prepare(
         `SELECT COUNT(*) AS c FROM users
