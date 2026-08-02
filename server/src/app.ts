@@ -11,6 +11,15 @@ import { pointAppsRouter } from "./routes/pointApps";
 import { pointTemplatesRouter } from "./routes/pointTemplates";
 import { adminPointAppsRouter } from "./routes/admin/pointApps";
 import { adminPointTypesRouter } from "./routes/admin/pointTypes";
+import { adminContentRouter } from "./routes/admin/content";
+import { adminJoinRouter } from "./routes/admin/join";
+import { adminActivitiesRouter } from "./routes/admin/activities";
+import { adminUsersRouter } from "./routes/admin/users";
+import {
+  adminPermissionPackagesRouter,
+  adminGrantsRouter,
+} from "./routes/admin/permissions";
+import { adminDashboardRouter } from "./routes/admin/dashboard";
 
 export function createApp() {
   const app = express();
@@ -27,5 +36,12 @@ export function createApp() {
   app.use("/api/me", pointAppsRouter);
   app.use("/api/admin/point-applications", adminPointAppsRouter);
   app.use("/api/admin/point-types", adminPointTypesRouter);
+  app.use("/api/admin/content", adminContentRouter);
+  app.use("/api/admin/join-applications", adminJoinRouter);
+  app.use("/api/admin/activities", adminActivitiesRouter);
+  app.use("/api/admin/users", adminUsersRouter);
+  app.use("/api/admin/permission-packages", adminPermissionPackagesRouter);
+  app.use("/api/admin/admin-grants", adminGrantsRouter);
+  app.use("/api/admin/dashboard", adminDashboardRouter);
   return app;
 }
