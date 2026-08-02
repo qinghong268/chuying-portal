@@ -122,6 +122,51 @@ describe("point applications — reflection length", () => {
   });
 });
 
+describe("point applications — double approve", () => {
+  it("second approve returns 409 and does not double-credit ledger", async () => {
+    const app = createApp();
+    const eagle = await loginAs(app, "eagle");
+    const now = Date.now();
+    const day = 24 * 60 * 60 * 1000;
+    const insert = getDb()
+      .prepare(
+        `INSERT INTO activities (title, description, mode, start_at, end_at, enroll_deadline, target_points, status, featured, created_at)
+         VALUES (?, ?, 'online', ?, ?, ?, 10, 'published', 0, ?)`,
+      )
+      .run("双审活动", "desc", now + day, now + 3 * day, now + day, now);
+    const activityId = Number(insert.lastInsertRowid);
+
+    await eagle.post(`/api/activities/${activityId}/enroll`);
+    await eagle.put(`/api/activities/${activityId}/progress`).send({ percent: 99 });
+
+    const applyRes = await eagle.post("/api/me/point-applications").send({
+      type: "type1",
+      activityId,
+      reflection: reflectionOk,
+    });
+    expect(applyRes.status).toBe(201);
+    const applicationId = applyRes.body.application.id as number;
+
+    const admin = await loginAs(app, "admin");
+    const firstApprove = await admin
+      .post(`/api/admin/point-applications/${applicationId}/approve`)
+      .send({ pointsGranted: 10 });
+    expect(firstApprove.status).toBe(200);
+
+    const secondApprove = await admin
+      .post(`/api/admin/point-applications/${applicationId}/approve`)
+      .send({ pointsGranted: 10 });
+    expect(secondApprove.status).toBe(409);
+
+    const ledgerCount = (
+      getDb()
+        .prepare(`SELECT COUNT(*) AS c FROM point_ledger WHERE application_id = ?`)
+        .get(applicationId) as { c: number }
+    ).c;
+    expect(ledgerCount).toBe(1);
+  });
+});
+
 describe("point applications — reject then re-submit", () => {
   it("reject requires reason; re-submit creates a new application id", async () => {
     const app = createApp();

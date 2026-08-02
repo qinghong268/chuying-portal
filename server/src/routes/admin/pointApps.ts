@@ -138,7 +138,7 @@ adminPointAppsRouter.post("/:id/approve", (req, res) => {
   const now = Date.now();
 
   const run = getDb().transaction(() => {
-    getDb()
+    const updateResult = getDb()
       .prepare(
         `UPDATE point_applications
          SET status = 'approved',
@@ -150,13 +150,13 @@ adminPointAppsRouter.post("/:id/approve", (req, res) => {
       )
       .run(pointsGranted, reviewerId, now, id);
 
+    if (updateResult.changes !== 1) {
+      throw new Error("CONFLICT");
+    }
+
     const updated = getDb()
       .prepare(`SELECT * FROM point_applications WHERE id = ?`)
       .get(id) as ApplicationRow;
-
-    if (updated.status !== "approved") {
-      throw new Error("CONFLICT");
-    }
 
     const balanceRow = getDb()
       .prepare(
@@ -223,7 +223,7 @@ adminPointAppsRouter.post("/:id/reject", (req, res) => {
   }
 
   const now = Date.now();
-  getDb()
+  const updateResult = getDb()
     .prepare(
       `UPDATE point_applications
        SET status = 'rejected',
@@ -233,6 +233,11 @@ adminPointAppsRouter.post("/:id/reject", (req, res) => {
        WHERE id = ? AND status = 'pending'`,
     )
     .run(parsed.data.reason, req.authUser!.id, now, id);
+
+  if (updateResult.changes !== 1) {
+    res.status(409).json({ error: "Application already reviewed" });
+    return;
+  }
 
   const updated = getDb()
     .prepare(`SELECT * FROM point_applications WHERE id = ?`)

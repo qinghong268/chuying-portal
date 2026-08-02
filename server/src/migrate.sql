@@ -120,3 +120,4 @@ CREATE INDEX IF NOT EXISTS idx_enrollments_activity_id ON enrollments(activity_i
 CREATE INDEX IF NOT EXISTS idx_watch_progress_user_activity ON watch_progress(user_id, activity_id);
 CREATE INDEX IF NOT EXISTS idx_point_applications_user_id ON point_applications(user_id);
 CREATE INDEX IF NOT EXISTS idx_point_ledger_user_id ON point_ledger(user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_point_ledger_application_id ON point_ledger(application_id);
