@@ -68,7 +68,19 @@ export function PortalLayout() {
         <Outlet />
       </main>
       <footer className={styles.footer}>
-        <div className={styles.inner}>SoftTong · 雏鹰计划</div>
+        <div className={styles.footerInner}>
+          <div>
+            SoftTong · 雏鹰计划 — 面向青年人才的培养门户
+          </div>
+          <nav className={styles.footerNav} aria-label="页脚导航">
+            <NavLink to="/about">计划介绍</NavLink>
+            <NavLink to="/activities">活动</NavLink>
+            <NavLink to="/courses">课程</NavLink>
+            <a href="/#company">软通智慧</a>
+            <NavLink to="/join">加入我们</NavLink>
+          </nav>
+          <div>© SoftTong / 软通智慧</div>
+        </div>
       </footer>
     </div>
   );

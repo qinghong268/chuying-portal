@@ -1,0 +1,113 @@
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: var(--space-xl);
+  align-items: start;
+}
+
+.cover {
+  height: 220px;
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-lg);
+  background:
+    linear-gradient(135deg, rgba(13, 148, 136, 0.22), rgba(45, 212, 191, 0.18)),
+    var(--color-muted);
+  border: 1px solid var(--color-border);
+}
+
+.title {
+  margin: var(--space-md) 0 0;
+  font-family: var(--font-display);
+  font-size: 1.85rem;
+}
+
+.metaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+}
+
+.infoList {
+  margin: var(--space-lg) 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-sm);
+  color: var(--color-muted-foreground);
+}
+
+.prose {
+  margin-top: var(--space-xl);
+}
+
+.prose h2 {
+  margin: 0 0 var(--space-md);
+  font-size: 1.2rem;
+}
+
+.prose p,
+.prose li {
+  line-height: 1.7;
+  color: var(--color-foreground);
+}
+
+.prose ul {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.side {
+  position: sticky;
+  top: 88px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.sideTitle {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.sideRow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-md);
+  font-size: 0.9rem;
+}
+
+.sideRow dt {
+  color: var(--color-muted-foreground);
+}
+
+.sideRow dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}
+
+.progressBox {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.progressBar {
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-muted);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--color-primary);
+  transition: width 0.25s ease;
+}
+
+.actions {
+  display: grid;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}

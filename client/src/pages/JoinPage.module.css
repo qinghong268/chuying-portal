@@ -1,0 +1,10 @@
+.notice ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--color-muted-foreground);
+  line-height: 1.7;
+}
+
+.success {
+  text-align: left;
+}

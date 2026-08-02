@@ -1,0 +1,118 @@
+.wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: var(--space-2xl) var(--space-lg) var(--space-3xl);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2xl);
+  align-items: stretch;
+}
+
+.brandPane {
+  padding: var(--space-2xl);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(145deg, rgba(13, 148, 136, 0.14), rgba(45, 212, 191, 0.1)),
+    var(--color-card);
+  border: 1px solid var(--color-border);
+}
+
+.brand {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.brandTitle {
+  margin: var(--space-md) 0 var(--space-xl);
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+
+.brandPane ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--color-muted-foreground);
+  line-height: 1.9;
+}
+
+.loginPane {
+  display: flex;
+  flex-direction: column;
+}
+
+.loginTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+}
+
+.divider {
+  margin: var(--space-lg) 0 var(--space-md);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-muted-foreground);
+  letter-spacing: 0.02em;
+}
+
+.roleGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+
+.roleCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  text-align: left;
+  border: 1px solid var(--color-border-neutral);
+  border-radius: var(--radius-md);
+  background: var(--color-background);
+  padding: var(--space-md);
+  cursor: pointer;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.roleCard:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
+.roleCard:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.roleCard strong {
+  font-size: 1rem;
+}
+
+.roleCard span {
+  font-size: 0.8rem;
+  color: var(--color-muted-foreground);
+  line-height: 1.4;
+}
+
+.roleCard em {
+  margin-top: auto;
+  font-style: normal;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.joinHint {
+  margin: var(--space-lg) 0 0;
+  color: var(--color-muted-foreground);
+}
+
+.joinHint a {
+  margin-left: 0.35rem;
+  font-weight: 600;
+}
