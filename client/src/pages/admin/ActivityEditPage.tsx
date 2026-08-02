@@ -76,7 +76,7 @@ export function ActivityEditPage() {
     e.preventDefault();
     setSaving(true);
     setError(null);
-    const payload = {
+    const payload: Record<string, unknown> = {
       title: form.title.trim(),
       description: form.description.trim(),
       mode: form.mode,
@@ -85,8 +85,12 @@ export function ActivityEditPage() {
       enrollDeadline: datetimeLocalToTs(form.enrollDeadline),
       targetPoints: form.targetPoints,
       featured: form.featured,
-      status: publish ? ("published" as const) : ("draft" as const),
     };
+    if (publish) {
+      payload.status = "published";
+    } else if (isNew) {
+      payload.status = "draft";
+    }
     try {
       if (isNew) {
         const res = await api<{ activity: AdminActivity }>("/api/admin/activities", {
