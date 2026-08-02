@@ -1,0 +1,119 @@
+.shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  height: 64px;
+  background: var(--color-card);
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-lg);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+.brand {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
+.brand:hover {
+  color: var(--color-primary-hover);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex: 1;
+}
+
+.link {
+  color: var(--color-foreground);
+  padding: var(--space-sm) 0;
+  border-bottom: 2px solid transparent;
+  font-weight: 500;
+}
+
+.link:hover {
+  color: var(--color-primary);
+}
+
+.linkActive {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-left: auto;
+}
+
+.user {
+  color: var(--color-muted-foreground);
+  font-size: 0.875rem;
+}
+
+.muted {
+  color: var(--color-muted-foreground);
+  font-size: 0.875rem;
+}
+
+.ghostBtn,
+.accentBtn {
+  border: none;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  font-weight: 600;
+}
+
+.ghostBtn {
+  background: transparent;
+  color: var(--color-foreground);
+}
+
+.ghostBtn:hover {
+  background: var(--color-muted);
+}
+
+.accentBtn {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.accentBtn:hover {
+  background: var(--color-accent-hover);
+}
+
+.main {
+  flex: 1;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-xl) var(--space-lg);
+}
+
+.footer {
+  border-top: 1px solid var(--color-border);
+  background: var(--color-card);
+  color: var(--color-muted-foreground);
+  font-size: 0.875rem;
+  padding: var(--space-lg) 0;
+}

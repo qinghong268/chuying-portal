@@ -1,0 +1,58 @@
+:root {
+  /* Color */
+  --color-primary: #0D9488;
+  --color-primary-hover: #0F766E;
+  --color-on-primary: #FFFFFF;
+  --color-secondary: #2DD4BF;
+  --color-on-secondary: #134E4A;
+  --color-accent: #D97706;
+  --color-accent-hover: #B45309;
+  --color-on-accent: #FFFFFF;
+  --color-background: #F0FDFA;
+  --color-foreground: #134E4A;
+  --color-card: #FFFFFF;
+  --color-card-foreground: #134E4A;
+  --color-muted: #E8F1F4;
+  --color-muted-foreground: #64748B;
+  --color-border: #99F6E4;
+  --color-border-neutral: #D1E5E3;
+  --color-border-strong: #5EEAD4;
+  --color-destructive: #DC2626;
+  --color-success: #16A34A;
+  --color-warning: #F59E0B;
+  --color-info: #0284C7;
+  --color-ring: #0D9488;
+  --color-overlay: rgba(15, 23, 42, 0.45);
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* Space */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+
+  /* Shadow */
+  --shadow-soft: 0 2px 8px rgba(13, 148, 136, 0.08);
+  --shadow-card: 0 4px 16px rgba(15, 23, 42, 0.06);
+  --shadow-dropdown: 0 8px 24px rgba(15, 23, 42, 0.10);
+  --shadow-modal: 0 16px 48px rgba(15, 23, 42, 0.16);
+
+  /* Font */
+  --font-sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-display: "Lexend", "Noto Sans SC", sans-serif;
+}
+
+[data-density="admin"] {
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --shadow-card: none;
+}
