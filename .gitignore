@@ -10,4 +10,7 @@ server/data/*.db-shm
 *.tsbuildinfo
 .DS_Store
 .agent-scratch/
-docs/
+# 公开仓仅收录 PRD；其它 docs 仍本地保留
+docs/*
+!docs/prd/
+!docs/prd/**

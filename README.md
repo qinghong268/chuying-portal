@@ -4,7 +4,7 @@ SoftTong「**雏英计划**」PC Web 全栈站点：前台宣传与加入申请�
 
 技术栈：npm workspaces monorepo · Vite + React · Express · SQLite（`better-sqlite3`）。
 
-> 本仓库**不含** `docs/`（产品 PRD / 设计稿仅本地保留）。按下文即可完整克隆、安装、开发与部署。
+> 产品 PRD 见仓库内 [`docs/prd/`](./docs/prd/)（公开）。设计规格等其它文档仍仅本地保留，不入库。
 
 ---
 
@@ -162,4 +162,4 @@ npm test             # server 端 Vitest
 
 **已实现：** CMS 首页与计划介绍、活动/课程、加入申请与审核、雏英报名与积分申请、管理后台与权限包、演示三角色账号密码 + 一键登录。
 
-**未纳入 V1：** 移动端适配、商城、企业 SSO、加入通过后自动开户（见本地 `docs/prd/known-gaps.md`，不在本公开仓库内）。
+**未纳入 V1：** 移动端适配、商城、企业 SSO、加入通过后自动开户（详见 [`docs/prd/known-gaps.md`](./docs/prd/known-gaps.md)）。
