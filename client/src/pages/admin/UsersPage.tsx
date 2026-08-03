@@ -47,13 +47,20 @@ export function UsersPage() {
   }, [load]);
 
   async function toggleStatus(u: AdminUser) {
+    const disabling = u.status === "active";
+    const ok = window.confirm(
+      disabling
+        ? `确认停用账号「${u.displayName}」（${u.email}）？\n停用后该用户将无法登录及使用需登录功能。`
+        : `确认重新启用账号「${u.displayName}」（${u.email}）？`,
+    );
+    if (!ok) return;
+
     setActing(u.id);
     setError(null);
     try {
-      const path =
-        u.status === "active"
-          ? `/api/admin/users/${u.id}/disable`
-          : `/api/admin/users/${u.id}/enable`;
+      const path = disabling
+        ? `/api/admin/users/${u.id}/disable`
+        : `/api/admin/users/${u.id}/enable`;
       const res = await api<{ user: AdminUser }>(path, { method: "POST" });
       setUsers((prev) => prev.map((x) => (x.id === res.user.id ? res.user : x)));
     } catch (e) {
