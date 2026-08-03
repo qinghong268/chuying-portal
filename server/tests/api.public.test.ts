@@ -60,7 +60,7 @@ describe("POST /api/join", () => {
     const res = await request(app).post("/api/join").send({
       name: "张三",
       contact: "13800138000",
-      message: "希望加入雏鹰计划，学习成长。",
+      message: "希望加入雏英计划，学习成长。",
     });
     expect(res.status).toBe(201);
     expect(res.body.application.status).toBe("pending");

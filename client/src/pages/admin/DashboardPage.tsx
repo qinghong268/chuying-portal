@@ -50,7 +50,7 @@ export function DashboardPage() {
         <>
           <div className={styles.statGrid}>
             <div className={`${shared.panel} ${styles.statCard}`}>
-              <span className={styles.statLabel}>活跃雏鹰</span>
+              <span className={styles.statLabel}>活跃雏英</span>
               <span className={styles.statValue}>{summary.eagleCount}</span>
             </div>
             <div className={`${shared.panel} ${styles.statCard}`}>

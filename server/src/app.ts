@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import express from "express";
 import cookieParser from "cookie-parser";
 import { authRouter } from "./routes/auth";
@@ -43,5 +45,19 @@ export function createApp() {
   app.use("/api/admin/permission-packages", adminPermissionPackagesRouter);
   app.use("/api/admin/admin-grants", adminGrantsRouter);
   app.use("/api/admin/dashboard", adminDashboardRouter);
+
+  const clientDist =
+    process.env.CLIENT_DIST ?? join(__dirname, "..", "..", "client", "dist");
+  if (existsSync(clientDist)) {
+    app.use(express.static(clientDist));
+    app.get("*", (req, res, next) => {
+      if (req.path.startsWith("/api")) {
+        next();
+        return;
+      }
+      res.sendFile(join(clientDist, "index.html"));
+    });
+  }
+
   return app;
 }

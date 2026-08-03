@@ -10,7 +10,7 @@ export function AdminLayout() {
   return (
     <div className={styles.shell} data-density="admin">
       <header className={styles.topbar}>
-        <div className={styles.brand}>雏鹰计划 · 管理后台</div>
+        <div className={styles.brand}>雏英计划 · 管理后台</div>
         <div className={styles.actions}>
           {loading ? (
             <span>加载中…</span>

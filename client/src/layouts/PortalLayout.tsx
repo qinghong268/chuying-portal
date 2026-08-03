@@ -18,7 +18,7 @@ export function PortalLayout() {
       <header className={styles.topbar}>
         <div className={styles.inner}>
           <NavLink to="/" className={styles.brand} end>
-            雏鹰计划
+            雏英计划
           </NavLink>
           <nav className={styles.nav} aria-label="前台导航">
             {NAV.map((item) => (
@@ -70,7 +70,7 @@ export function PortalLayout() {
       <footer className={styles.footer}>
         <div className={styles.footerInner}>
           <div>
-            SoftTong · 雏鹰计划 — 面向青年人才的培养门户
+            SoftTong · 雏英计划 — 面向青年人才的培养门户
           </div>
           <nav className={styles.footerNav} aria-label="页脚导航">
             <NavLink to="/about">计划介绍</NavLink>

@@ -13,7 +13,7 @@ beforeAll(() => {
 describe("POST /api/join contact validation", () => {
   const validPayload = {
     name: "李四",
-    message: "希望加入雏鹰计划，学习成长。",
+    message: "希望加入雏英计划，学习成长。",
   };
 
   it("rejects invalid contact with 400", async () => {

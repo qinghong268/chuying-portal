@@ -11,7 +11,7 @@ export function datetimeLocalToTs(value: string): number {
 export function roleLabel(role: string): string {
   switch (role) {
     case "eagle":
-      return "雏鹰";
+      return "雏英";
     case "admin":
       return "管理员";
     case "super_admin":

@@ -5,5 +5,9 @@ build/
 .env
 .env.*
 server/data/*.db
+server/data/*.db-wal
+server/data/*.db-shm
+*.tsbuildinfo
 .DS_Store
 .agent-scratch/
+docs/

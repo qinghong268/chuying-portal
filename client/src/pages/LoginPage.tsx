@@ -10,13 +10,13 @@ import styles from "./LoginPage.module.css";
 const DEMO_PASSWORD = "Demo1234!";
 
 const DEMO_ACCOUNTS = [
-  { role: "雏鹰", email: "eagle@demo", desc: "前台个人中心、报名与积分" },
+  { role: "雏英", email: "eagle@demo", desc: "前台个人中心、报名与积分" },
   { role: "管理员", email: "admin@demo", desc: "后台控制台（八类权限）" },
   { role: "超级管理员", email: "super@demo", desc: "后台全权限含 permission" },
 ] as const;
 
 const DEMO_ROLES: { role: UserRole; title: string; desc: string }[] = [
-  { role: "eagle", title: "雏鹰", desc: "前台个人中心、报名与积分" },
+  { role: "eagle", title: "雏英", desc: "前台个人中心、报名与积分" },
   { role: "admin", title: "管理员", desc: "进入后台控制台" },
   { role: "super_admin", title: "超级管理员", desc: "进入后台控制台" },
 ];
@@ -76,11 +76,11 @@ export function LoginPage() {
     <div className={`${shared.page} ${styles.wrap}`}>
       <div className={styles.grid}>
         <section className={styles.brandPane}>
-          <p className={styles.brand}>雏鹰计划</p>
+          <p className={styles.brand}>雏英计划</p>
           <h1 className={styles.brandTitle}>SoftTong 人才培养计划门户</h1>
           <ul>
             <li>浏览活动与课程</li>
-            <li>报名与积分申请（雏鹰）</li>
+            <li>报名与积分申请（雏英）</li>
             <li>管理后台（管理员）</li>
           </ul>
         </section>
@@ -161,7 +161,7 @@ export function LoginPage() {
           {error ? <p className={shared.error}>{error}</p> : null}
 
           <p className={styles.joinHint}>
-            还不是雏鹰？
+            还不是雏英？
             <Link to="/join">申请加入</Link>
           </p>
         </section>

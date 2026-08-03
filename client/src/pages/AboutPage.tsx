@@ -7,7 +7,7 @@ import styles from "./AboutPage.module.css";
 
 const FAQ = [
   {
-    q: "谁可以申请加入雏鹰计划？",
+    q: "谁可以申请加入雏英计划？",
     a: "面向有意向参与学习与实践的青年人才。具体资格说明以运营正式发布为准。",
   },
   {
@@ -51,7 +51,7 @@ export function AboutPage() {
         <h1 className={shared.pageTitle}>计划介绍</h1>
         <p className={shared.lead}>
           {plan?.body ||
-            "雏鹰计划面向青年人才，提供学习、实践与成长机会。以下为结构占位，终稿文案待运营提供。"}
+            "雏英计划面向青年人才，提供学习、实践与成长机会。以下为结构占位，终稿文案待运营提供。"}
         </p>
       </header>
 
@@ -59,7 +59,7 @@ export function AboutPage() {
         <h2 className={shared.sectionTitle}>计划定位</h2>
         <div className={styles.prose}>
           <p>
-            雏鹰计划是 SoftTong 面向青年人才的培养门户，帮助参与者了解活动与课程、完成实践并按规则申请积分。
+            雏英计划是 SoftTong 面向青年人才的培养门户，帮助参与者了解活动与课程、完成实践并按规则申请积分。
           </p>
           <p className={shared.muted}>公司主体长文以首页「软通智慧」专区为主；本页聚焦计划本身。</p>
         </div>
@@ -93,7 +93,7 @@ export function AboutPage() {
           </li>
           <li>
             <strong>审核加入</strong>
-            <span>申请经管理员审核后获得雏鹰身份，避免自助冒用。</span>
+            <span>申请经管理员审核后获得雏英身份，避免自助冒用。</span>
           </li>
         </ul>
       </section>

@@ -45,7 +45,7 @@ export function MeOverviewPage() {
     void load();
   }, [load]);
 
-  const displayName = user?.displayName || "雏鹰";
+  const displayName = user?.displayName || "雏英";
   const accountStatus = user?.status === "disabled" ? "已禁用" : "正常";
 
   return (

@@ -182,7 +182,7 @@ export function ActivityDetailPage() {
                 {!user
                   ? "未登录"
                   : !isEagle
-                    ? "非雏鹰账号"
+                    ? "非雏英账号"
                     : enrolled
                       ? "已报名"
                       : "未报名"}
@@ -232,7 +232,7 @@ export function ActivityDetailPage() {
             ) : null}
 
             {user && !isEagle ? (
-              <p className={shared.muted}>管理员账号可浏览详情，前台报名仅限雏鹰。</p>
+              <p className={shared.muted}>管理员账号可浏览详情，前台报名仅限雏英。</p>
             ) : null}
 
             {isEagle && !enrolled ? (

@@ -152,7 +152,7 @@ export function ConsolePage() {
             <section className={shared.panel} style={{ marginTop: "var(--space-lg)" }}>
               <h2 className={shared.sectionTitle}>数据摘要</h2>
               <p className={shared.muted}>
-                活跃雏鹰 {summary.eagleCount} · 近 7 日报名 {summary.enrollmentsLast7d} ·
+                活跃雏英 {summary.eagleCount} · 近 7 日报名 {summary.enrollmentsLast7d} ·
                 近 7 日积分流水 {summary.ledgerCountLast7d} 笔 / +{summary.ledgerPointsLast7d} 分
               </p>
               <p className={shared.muted}>更新于 {formatDateTime(summary.generatedAt)}</p>

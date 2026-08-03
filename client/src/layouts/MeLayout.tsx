@@ -27,7 +27,7 @@ export function MeLayout() {
       <div className={`${shared.page} ${shared.container}`}>
         <div className={styles.denied}>
           <h1 className={styles.title}>个人中心</h1>
-          <p>当前账号无雏鹰个人中心权限，请使用雏鹰演示账号登录。</p>
+          <p>当前账号无雏英个人中心权限，请使用雏英演示账号登录。</p>
           <div className={shared.btnRow}>
             <Link to="/" className={shared.btnSecondary}>
               返回首页

@@ -80,8 +80,8 @@ export function JoinPage() {
   if (user?.role === "eagle") {
     return (
       <div className={`${shared.page} ${shared.narrow}`}>
-        <h1 className={shared.pageTitle}>加入雏鹰计划</h1>
-        <p className={shared.lead}>你已是雏鹰账号，可直接前往个人中心或浏览活动。</p>
+        <h1 className={shared.pageTitle}>加入雏英计划</h1>
+        <p className={shared.lead}>你已是雏英账号，可直接前往个人中心或浏览活动。</p>
         <div className={shared.btnRow}>
           <Link to="/me" className={shared.btnPrimary}>
             个人中心
@@ -118,7 +118,7 @@ export function JoinPage() {
 
   return (
     <div className={`${shared.page} ${shared.narrow}`}>
-      <h1 className={shared.pageTitle}>加入雏鹰计划</h1>
+      <h1 className={shared.pageTitle}>加入雏英计划</h1>
       <p className={shared.lead}>
         填写以下信息提交申请，审核通过后即可报名活动并累计积分。
       </p>
@@ -126,7 +126,7 @@ export function JoinPage() {
       <div className={`${shared.panel} ${styles.notice}`}>
         <ul>
           <li>提交后状态为「待审核」，请耐心等待管理员处理</li>
-          <li>通过后可使用雏鹰身份登录前台个人中心</li>
+          <li>通过后可使用雏英身份登录前台个人中心</li>
         </ul>
       </div>
 

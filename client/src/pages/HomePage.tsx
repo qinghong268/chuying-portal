@@ -11,7 +11,7 @@ import shared from "./shared.module.css";
 import styles from "./HomePage.module.css";
 
 const DEFAULT_HERO = {
-  title: "雏鹰计划",
+  title: "雏英计划",
   headline: "面向青年人才的 SoftTong 培养门户",
   body: "了解计划、参与活动与课程，开启成长路径。宣传素材由运营团队后续补充。",
 };
@@ -19,7 +19,7 @@ const DEFAULT_HERO = {
 const PLAN_HIGHLIGHTS = [
   { title: "实践导向", desc: "通过活动与课程串联学习与落地实践。" },
   { title: "积分成长", desc: "完成活动后可按规则申请心得与积分。" },
-  { title: "开放加入", desc: "提交申请经审核后即可使用雏鹰身份。" },
+  { title: "开放加入", desc: "提交申请经审核后即可使用雏英身份。" },
 ];
 
 function pickBlock(blocks: ContentBlock[], key: string): ContentBlock | undefined {
@@ -81,7 +81,7 @@ export function HomePage() {
     <div className={shared.page}>
       <section className={styles.hero} aria-label="首页首屏">
         <div className={styles.heroInner}>
-          <p className={styles.brand}>{hero.title || "雏鹰计划"}</p>
+          <p className={styles.brand}>{hero.title || "雏英计划"}</p>
           <h1 className={styles.headline}>{hero.headline}</h1>
           <p className={styles.subcopy}>{hero.body}</p>
           <div className={styles.ctaRow}>
@@ -105,11 +105,11 @@ export function HomePage() {
           <div className={styles.promoGrid}>
             <div className={styles.promoCopy}>
               <h2 id="plan-promo-title" className={shared.sectionTitle}>
-                {plan?.title || "雏鹰计划宣传"}
+                {plan?.title || "雏英计划宣传"}
               </h2>
               <p>
                 {plan?.body ||
-                  "雏鹰计划面向青年人才，提供学习、实践与成长机会。具体方案与细则以正式发布为准。"}
+                  "雏英计划面向青年人才，提供学习、实践与成长机会。具体方案与细则以正式发布为准。"}
               </p>
               <ul className={styles.highlights}>
                 {PLAN_HIGHLIGHTS.map((item) => (

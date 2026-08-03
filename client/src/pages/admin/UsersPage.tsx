@@ -81,7 +81,7 @@ export function UsersPage() {
           <label htmlFor="user-role">角色</label>
           <select id="user-role" value={role} onChange={(e) => setRole(e.target.value)}>
             <option value="">全部</option>
-            <option value="eagle">雏鹰</option>
+            <option value="eagle">雏英</option>
             <option value="admin">管理员</option>
             <option value="super_admin">超级管理员</option>
           </select>

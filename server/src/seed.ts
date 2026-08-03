@@ -61,7 +61,7 @@ export function runSeed(): void {
     return;
   }
 
-  insertUser("eagle@demo", "eagle", "演示雏鹰");
+  insertUser("eagle@demo", "eagle", "演示雏英");
   const adminId = insertUser("admin@demo", "admin", "演示管理员");
   const superAdminId = insertUser("super@demo", "super_admin", "演示超级管理员");
 
@@ -89,18 +89,18 @@ export function runSeed(): void {
   );
   insertBlock.run(
     "home_hero",
-    "雏鹰计划",
-    "欢迎了解 SoftTong 雏鹰计划。计划详情与宣传素材由运营团队后续补充。",
-    "雏鹰计划",
-    "欢迎了解 SoftTong 雏鹰计划。计划详情与宣传素材由运营团队后续补充。",
+    "雏英计划",
+    "欢迎了解 SoftTong 雏英计划。计划详情与宣传素材由运营团队后续补充。",
+    "雏英计划",
+    "欢迎了解 SoftTong 雏英计划。计划详情与宣传素材由运营团队后续补充。",
     ts,
   );
   insertBlock.run(
     "home_plan_promo",
-    "雏鹰计划宣传",
-    "雏鹰计划面向青年人才，提供学习、实践与成长机会。具体方案与细则以正式发布为准。",
-    "雏鹰计划宣传",
-    "雏鹰计划面向青年人才，提供学习、实践与成长机会。具体方案与细则以正式发布为准。",
+    "雏英计划宣传",
+    "雏英计划面向青年人才，提供学习、实践与成长机会。具体方案与细则以正式发布为准。",
+    "雏英计划宣传",
+    "雏英计划面向青年人才，提供学习、实践与成长机会。具体方案与细则以正式发布为准。",
     ts,
   );
   insertBlock.run(
@@ -121,7 +121,7 @@ export function runSeed(): void {
   const onlineEnd = ts + 3 * day;
   insertActivity.run(
     "线上入门讲座",
-    "面向雏鹰的线上入门讲座，完成观看后可提交心得申请积分。",
+    "面向雏英的线上入门讲座，完成观看后可提交心得申请积分。",
     "online",
     onlineStart,
     onlineEnd,
@@ -149,8 +149,8 @@ export function runSeed(): void {
      VALUES (?, ?, 'published', 1, ?)`,
   );
   insertCourse.run(
-    "雏鹰成长第一课",
-    "介绍雏鹰计划的学习路径与基本要求。",
+    "雏英成长第一课",
+    "介绍雏英计划的学习路径与基本要求。",
     ts,
   );
   insertCourse.run(
