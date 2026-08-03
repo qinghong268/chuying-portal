@@ -7,6 +7,14 @@ import { resolvePostLoginPath } from "../lib/authRedirect";
 import shared from "./shared.module.css";
 import styles from "./LoginPage.module.css";
 
+const DEMO_PASSWORD = "Demo1234!";
+
+const DEMO_ACCOUNTS = [
+  { role: "雏鹰", email: "eagle@demo", desc: "前台个人中心、报名与积分" },
+  { role: "管理员", email: "admin@demo", desc: "后台控制台（八类权限）" },
+  { role: "超级管理员", email: "super@demo", desc: "后台全权限含 permission" },
+] as const;
+
 const DEMO_ROLES: { role: UserRole; title: string; desc: string }[] = [
   { role: "eagle", title: "雏鹰", desc: "前台个人中心、报名与积分" },
   { role: "admin", title: "管理员", desc: "进入后台控制台" },
@@ -14,11 +22,12 @@ const DEMO_ROLES: { role: UserRole; title: string; desc: string }[] = [
 ];
 
 export function LoginPage() {
-  const { user, loading, demoLogin } = useAuth();
+  const { user, loading, login, demoLogin } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const redirect = params.get("redirect");
   const [busyRole, setBusyRole] = useState<UserRole | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
@@ -41,9 +50,18 @@ export function LoginPage() {
     }
   }
 
-  function handlePasswordLogin(e: FormEvent) {
+  async function handlePasswordLogin(e: FormEvent) {
     e.preventDefault();
-    setError("账号密码登录为占位能力，请使用下方演示一键登录。");
+    setError(null);
+    setSubmitting(true);
+    try {
+      const loggedIn = await login(account.trim(), password);
+      navigate(resolvePostLoginPath(loggedIn.role, redirect), { replace: true });
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "账号或密码错误，请重试");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (loading) {
@@ -69,10 +87,8 @@ export function LoginPage() {
 
         <section className={`${shared.panel} ${styles.loginPane}`}>
           <h2 className={styles.loginTitle}>登录</h2>
-          <p className={shared.muted}>演示环境请使用下方一键角色登录</p>
 
-          <form className={shared.formStack} onSubmit={handlePasswordLogin}>
-            <div className={styles.divider}>账号密码（占位）</div>
+          <form className={shared.formStack} onSubmit={(e) => void handlePasswordLogin(e)}>
             <div className={shared.field}>
               <label htmlFor="login-account">账号</label>
               <input
@@ -80,6 +96,7 @@ export function LoginPage() {
                 value={account}
                 onChange={(e) => setAccount(e.target.value)}
                 autoComplete="username"
+                required
               />
             </div>
             <div className={shared.field}>
@@ -90,21 +107,48 @@ export function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
+                required
               />
             </div>
-            <button type="submit" className={shared.btnPrimary}>
-              登录
+            <button
+              type="submit"
+              className={shared.btnPrimary}
+              disabled={submitting || busyRole !== null}
+            >
+              {submitting ? "登录中…" : "登录"}
             </button>
           </form>
 
-          <div className={styles.divider}>演示一键登录（主推）</div>
+          <div className={styles.demoTableWrap}>
+            <p className={styles.demoTableCaption}>演示账号（密码均为 {DEMO_PASSWORD}）</p>
+            <table className={styles.demoTable}>
+              <thead>
+                <tr>
+                  <th>角色</th>
+                  <th>账号</th>
+                </tr>
+              </thead>
+              <tbody>
+                {DEMO_ACCOUNTS.map((row) => (
+                  <tr key={row.email}>
+                    <td>{row.role}</td>
+                    <td>
+                      <code>{row.email}</code>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className={styles.divider}>或一键演示登录</div>
           <div className={styles.roleGrid}>
             {DEMO_ROLES.map((item) => (
               <button
                 key={item.role}
                 type="button"
                 className={styles.roleCard}
-                disabled={busyRole !== null}
+                disabled={busyRole !== null || submitting}
                 onClick={() => void handleDemo(item.role)}
               >
                 <strong>{item.title}</strong>

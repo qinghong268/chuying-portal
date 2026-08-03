@@ -1,12 +1,12 @@
-import { createHash } from "node:crypto";
 import {
   PERMISSION_PACKAGES,
   POINT_TEMPLATE_CODES,
   type PermissionCode,
 } from "@chuying/shared";
 import { getDb } from "./connection";
+import { hashPassword } from "./lib/password";
 
-const DEMO_PASSWORD = "demo123";
+const DEMO_PASSWORD = "Demo1234!";
 
 const TEMPLATE_NAMES: Record<(typeof POINT_TEMPLATE_CODES)[number], string> = {
   contest_award: "比赛获奖",
@@ -23,10 +23,6 @@ const TEMPLATE_DEFAULT_POINTS: Record<(typeof POINT_TEMPLATE_CODES)[number], num
   honor: 60,
   other_special: 20,
 };
-
-function hashPassword(password: string): string {
-  return createHash("sha256").update(password).digest("hex");
-}
 
 function now(): number {
   return Date.now();
@@ -118,26 +114,32 @@ export function runSeed(): void {
 
   const day = 24 * 60 * 60 * 1000;
   const insertActivity = database.prepare(
-    `INSERT INTO activities (title, description, mode, start_at, end_at, enroll_deadline, target_points, status, featured, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, 'published', 1, ?)`,
+    `INSERT INTO activities (title, description, mode, start_at, end_at, enroll_deadline, point_apply_deadline, target_points, status, featured, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'published', 1, ?)`,
   );
+  const onlineStart = ts + day;
+  const onlineEnd = ts + 3 * day;
   insertActivity.run(
     "线上入门讲座",
     "面向雏鹰的线上入门讲座，完成观看后可提交心得申请积分。",
     "online",
-    ts + day,
-    ts + 3 * day,
-    ts + day,
+    onlineStart,
+    onlineEnd,
+    onlineStart,
+    onlineEnd + day,
     10,
     ts,
   );
+  const offlineStart = ts + 7 * day;
+  const offlineEnd = ts + 7 * day + 4 * 60 * 60 * 1000;
   insertActivity.run(
     "线下实践工作坊",
     "线下集中实践工作坊，活动结束后可在规定窗口内提交心得。",
     "offline",
-    ts + 7 * day,
-    ts + 7 * day + 4 * 60 * 60 * 1000,
-    ts + 6 * day,
+    offlineStart,
+    offlineEnd,
+    offlineStart,
+    offlineEnd + day,
     15,
     ts,
   );

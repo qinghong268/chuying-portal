@@ -58,6 +58,39 @@
   font-weight: 700;
   color: var(--color-muted-foreground);
   letter-spacing: 0.02em;
+  text-align: center;
+}
+
+.demoTableWrap {
+  margin-top: var(--space-lg);
+}
+
+.demoTableCaption {
+  margin: 0 0 var(--space-sm);
+  font-size: 0.85rem;
+  color: var(--color-muted-foreground);
+}
+
+.demoTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.demoTable th,
+.demoTable td {
+  padding: var(--space-xs) var(--space-sm);
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.demoTable th {
+  font-weight: 600;
+  color: var(--color-muted-foreground);
+}
+
+.demoTable code {
+  font-size: 0.85em;
 }
 
 .roleGrid {

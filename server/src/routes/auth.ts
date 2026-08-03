@@ -1,7 +1,8 @@
-import { Router } from "express";
+import { Router, type Response } from "express";
 import { z } from "zod";
 import type { PermissionCode, UserRole } from "@chuying/shared";
 import { getDb } from "../connection";
+import { hashPassword } from "../lib/password";
 import { getUserPermissions } from "../lib/userPermissions";
 import {
   AUTH_COOKIE_NAME,
@@ -12,6 +13,11 @@ import {
 
 const demoLoginSchema = z.object({
   role: z.enum(["eagle", "admin", "super_admin"]),
+});
+
+const loginSchema = z.object({
+  email: z.string().min(1),
+  password: z.string().min(1),
 });
 
 const ROLE_EMAIL: Record<UserRole, string> = {
@@ -26,6 +32,10 @@ interface UserRow {
   role: UserRole;
   display_name: string;
   status: string;
+}
+
+interface UserRowWithPassword extends UserRow {
+  password_hash: string;
 }
 
 function toPublicUser(row: UserRow) {
@@ -43,6 +53,15 @@ function toPublicUser(row: UserRow) {
     };
   }
   return base;
+}
+
+function findUserByEmail(email: string): UserRowWithPassword | undefined {
+  return getDb()
+    .prepare(
+      `SELECT id, email, role, display_name, status, password_hash
+       FROM users WHERE email = ?`,
+    )
+    .get(email) as UserRowWithPassword | undefined;
 }
 
 function findDemoUserByRole(role: UserRole): UserRow | undefined {
@@ -66,6 +85,33 @@ function findUserById(id: number): UserRow | undefined {
 
 export const authRouter = Router();
 
+function issueSession(res: Response, user: UserRow): void {
+  const token = signAuthToken(user.id, user.role);
+  res.cookie(AUTH_COOKIE_NAME, token, authCookieOptions());
+  res.json({ user: toPublicUser(user) });
+}
+
+authRouter.post("/login", (req, res) => {
+  const parsed = loginSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid credentials" });
+    return;
+  }
+
+  const { email, password } = parsed.data;
+  const user = findUserByEmail(email);
+  if (
+    !user ||
+    user.status !== "active" ||
+    user.password_hash !== hashPassword(password)
+  ) {
+    res.status(401).json({ error: "Invalid credentials" });
+    return;
+  }
+
+  issueSession(res, user);
+});
+
 authRouter.post("/demo-login", (req, res) => {
   const parsed = demoLoginSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -79,9 +125,7 @@ authRouter.post("/demo-login", (req, res) => {
     return;
   }
 
-  const token = signAuthToken(user.id, user.role);
-  res.cookie(AUTH_COOKIE_NAME, token, authCookieOptions());
-  res.json({ user: toPublicUser(user) });
+  issueSession(res, user);
 });
 
 authRouter.get("/me", requireAuth, (req, res) => {

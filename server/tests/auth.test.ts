@@ -10,6 +10,28 @@ beforeAll(() => {
   seed();
 });
 
+describe("POST /api/auth/login", () => {
+  it("logs in with email and password", async () => {
+    const app = createApp();
+    const res = await request(app)
+      .post("/api/auth/login")
+      .send({ email: "eagle@demo", password: "Demo1234!" });
+    expect(res.status).toBe(200);
+    expect(res.body.user.role).toBe("eagle");
+    expect(res.body.user.email).toBe("eagle@demo");
+    expect(res.body.user).not.toHaveProperty("password_hash");
+    expect(res.headers["set-cookie"]).toBeTruthy();
+  });
+
+  it("rejects bad password", async () => {
+    const app = createApp();
+    const res = await request(app)
+      .post("/api/auth/login")
+      .send({ email: "eagle@demo", password: "wrong" });
+    expect(res.status).toBe(401);
+  });
+});
+
 describe("POST /api/auth/demo-login", () => {
   it("demo-login as eagle returns role eagle", async () => {
     const app = createApp();
@@ -109,5 +131,23 @@ describe("disabled user session invalidation", () => {
 
     const enrollRes = await eagle.post("/api/activities/1/enroll");
     expect(enrollRes.status).toBe(401);
+  });
+});
+
+describe("POST /api/auth/login (disabled user)", () => {
+  it("rejects disabled user", async () => {
+    const app = createApp();
+    const eagleRow = getDb()
+      .prepare(`SELECT id FROM users WHERE email = 'eagle@demo'`)
+      .get() as { id: number };
+
+    const superAdmin = request.agent(app);
+    await superAdmin.post("/api/auth/demo-login").send({ role: "super_admin" });
+    await superAdmin.post(`/api/admin/users/${eagleRow.id}/disable`);
+
+    const res = await request(app)
+      .post("/api/auth/login")
+      .send({ email: "eagle@demo", password: "Demo1234!" });
+    expect(res.status).toBe(401);
   });
 });
