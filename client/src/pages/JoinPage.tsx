@@ -10,20 +10,53 @@ interface JoinResult {
   status: string;
 }
 
+const MAINLAND_MOBILE = /^1[3-9]\d{9}$/;
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function isValidContact(value: string): boolean {
+  return MAINLAND_MOBILE.test(value) || EMAIL.test(value);
+}
+
 export function JoinPage() {
   const { user } = useAuth();
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
   const [message, setMessage] = useState("");
+  const [agreePrivacy, setAgreePrivacy] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [contactError, setContactError] = useState<string | null>(null);
+  const [privacyError, setPrivacyError] = useState<string | null>(null);
   const [result, setResult] = useState<JoinResult | null>(null);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!name.trim() || !contact.trim() || !message.trim()) {
-      setError("请填写姓名、联系方式与申请理由。");
+    setContactError(null);
+    setPrivacyError(null);
+
+    const trimmedContact = contact.trim();
+    let hasFieldError = false;
+
+    if (!trimmedContact) {
+      setContactError("请填写联系方式。");
+      hasFieldError = true;
+    } else if (!isValidContact(trimmedContact)) {
+      setContactError("请输入合法的中国大陆手机号或邮箱。");
+      hasFieldError = true;
+    }
+
+    if (!agreePrivacy) {
+      setPrivacyError("提交前请勾选同意隐私说明。");
+      hasFieldError = true;
+    }
+
+    if (!name.trim() || !message.trim()) {
+      setError("请填写姓名与申请理由。");
+      return;
+    }
+
+    if (hasFieldError) {
       return;
     }
     setSubmitting(true);
@@ -32,7 +65,7 @@ export function JoinPage() {
         method: "POST",
         body: JSON.stringify({
           name: name.trim(),
-          contact: contact.trim(),
+          contact: trimmedContact,
           message: message.trim(),
         }),
       });
@@ -113,11 +146,21 @@ export function JoinPage() {
           <input
             id="join-contact"
             value={contact}
-            onChange={(e) => setContact(e.target.value)}
+            onChange={(e) => {
+              setContact(e.target.value);
+              setContactError(null);
+            }}
             required
             maxLength={200}
             placeholder="例如 13800138000 或 you@example.com"
+            aria-invalid={contactError ? true : undefined}
+            aria-describedby={contactError ? "join-contact-error" : undefined}
           />
+          {contactError ? (
+            <span id="join-contact-error" className={styles.fieldError} role="alert">
+              {contactError}
+            </span>
+          ) : null}
         </div>
         <div className={shared.field}>
           <label htmlFor="join-message">申请理由 *</label>
@@ -130,6 +173,28 @@ export function JoinPage() {
             placeholder="简要说明加入动机与背景（建议 20 字以上）"
           />
           <span className={shared.muted}>已输入 {message.length} 字</span>
+        </div>
+
+        <div className={shared.field}>
+          <div className={styles.privacyRow}>
+            <input
+              id="join-privacy"
+              type="checkbox"
+              checked={agreePrivacy}
+              onChange={(e) => {
+                setAgreePrivacy(e.target.checked);
+                setPrivacyError(null);
+              }}
+              aria-invalid={privacyError ? true : undefined}
+              aria-describedby={privacyError ? "join-privacy-error" : undefined}
+            />
+            <label htmlFor="join-privacy">我已阅读并同意隐私说明</label>
+          </div>
+          {privacyError ? (
+            <span id="join-privacy-error" className={styles.fieldError} role="alert">
+              {privacyError}
+            </span>
+          ) : null}
         </div>
 
         {error ? <p className={shared.error}>{error}</p> : null}

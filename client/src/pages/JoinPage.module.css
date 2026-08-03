@@ -8,3 +8,27 @@
 .success {
   text-align: left;
 }
+
+.privacyRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+}
+
+.privacyRow input {
+  margin-top: 0.2rem;
+  flex-shrink: 0;
+}
+
+.privacyRow label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-foreground);
+  cursor: pointer;
+}
+
+.fieldError {
+  color: var(--color-destructive);
+  font-size: 0.85rem;
+  margin: 0;
+}
