@@ -31,10 +31,11 @@ function migrateActivityDeadlineColumns(): void {
     UPDATE activities SET enroll_deadline = start_at;
     UPDATE activities
     SET point_apply_deadline = end_at + ${dayMs}
-    WHERE point_apply_deadline IS NULL AND mode = 'online';
+    WHERE point_apply_deadline IS NULL;
+    -- Heal prior offline backfill that set deadline = end_at (zero-width window)
     UPDATE activities
-    SET point_apply_deadline = end_at
-    WHERE point_apply_deadline IS NULL AND mode = 'offline';
+    SET point_apply_deadline = end_at + ${dayMs}
+    WHERE mode = 'offline' AND point_apply_deadline = end_at;
   `);
 }
 

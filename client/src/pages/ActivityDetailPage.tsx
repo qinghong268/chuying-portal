@@ -144,6 +144,12 @@ export function ActivityDetailPage() {
           <ul className={styles.infoList}>
             <li>时间：{formatDateTime(activity.startAt)} ~ {formatDateTime(activity.endAt)}</li>
             <li>目标积分：{activity.targetPoints}</li>
+            <li>
+              积分申请通道截止：
+              {activity.pointApplyDeadline != null
+                ? formatDateTime(activity.pointApplyDeadline)
+                : "未设置"}
+            </li>
           </ul>
 
           <section className={styles.prose}>
@@ -155,7 +161,9 @@ export function ActivityDetailPage() {
             <h2>报名与积分规则摘要</h2>
             <ul>
               <li>线上：活动开始前可报名；观看进度 ≥ {WATCH_PROGRESS_THRESHOLD}% 可申请心得</li>
-              <li>线下：活动开始前可报；结束后 24 小时内可申请心得</li>
+              <li>
+                线下：活动开始前可报；结束后 24 小时内且须在积分申请通道截止前可申请心得
+              </li>
               <li>心得正文 300–400 字（在个人中心发起申请）</li>
             </ul>
           </section>
@@ -253,7 +261,9 @@ export function ActivityDetailPage() {
               <p className={shared.muted}>
                 {activity.mode === "online"
                   ? `观看进度达到 ${WATCH_PROGRESS_THRESHOLD}% 后可申请心得`
-                  : "活动结束后 24 小时内可申请心得"}
+                  : activity.pointApplyDeadline != null
+                    ? `活动结束后 24 小时内且须在 ${formatDateTime(activity.pointApplyDeadline)} 前可申请心得`
+                    : "活动结束后 24 小时内可申请心得"}
               </p>
             ) : null}
           </div>

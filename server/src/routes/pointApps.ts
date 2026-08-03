@@ -185,8 +185,10 @@ pointAppsRouter.get("/enrollments", requireAuth, requireRole("eagle"), (req, res
       }
     }
 
-    const windowEnd =
+    const hardWindowEnd =
       row.end_at + OFFLINE_APPLY_WINDOW_HOURS * 60 * 60 * 1000;
+    const channelEnd = row.point_apply_deadline ?? hardWindowEnd;
+    const windowEnd = Math.min(hardWindowEnd, channelEnd);
     const offlineWindowRemainingMs =
       row.mode === "offline" && now >= row.end_at && now <= windowEnd
         ? windowEnd - now
