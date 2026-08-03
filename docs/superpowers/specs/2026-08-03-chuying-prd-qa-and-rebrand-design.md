@@ -1,7 +1,7 @@
 # 雏英计划官网 — PRD 实测验收、修 bug 与正名改版 设计规格
 
 > 日期：2026-08-03  
-> 状态：Draft for user review  
+> 状态：Approved（用户确认进入实现计划）  
 > 产品正式名称：**雏英计划**（既有文档/代码中的「雏鹰」视为误称，阶段 B 统一改正）  
 > 代码库现状：本地 `master` @ `34c510c`（Tasks 1–12 + 终审 P1 已完成）  
 > 关联：`docs/prd/globaluser.md` 及各页 PRD；`docs/superpowers/specs/2026-08-02-chuying-portal-design.md`
