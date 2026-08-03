@@ -39,9 +39,14 @@ function migrateActivityDeadlineColumns(): void {
   `);
 }
 
+function migrateUserLastLoginColumn(): void {
+  addColumnIfMissing("users", "last_login_at", "INTEGER");
+}
+
 export function migrate(): void {
   const sql = readFileSync(join(__dirname, "migrate.sql"), "utf8");
   getDb().exec(sql);
   migrateContentBlockDraftColumns();
   migrateActivityDeadlineColumns();
+  migrateUserLastLoginColumn();
 }

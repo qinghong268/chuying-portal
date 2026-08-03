@@ -88,6 +88,10 @@ export const authRouter = Router();
 function issueSession(res: Response, user: UserRow): void {
   const token = signAuthToken(user.id, user.role);
   res.cookie(AUTH_COOKIE_NAME, token, authCookieOptions());
+  // Record login timestamp
+  getDb()
+    .prepare(`UPDATE users SET last_login_at = ? WHERE id = ?`)
+    .run(Date.now(), user.id);
   res.json({ user: toPublicUser(user) });
 }
 

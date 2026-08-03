@@ -10,6 +10,7 @@ interface UserRow {
   display_name: string;
   status: "active" | "disabled";
   created_at: number;
+  last_login_at: number | null;
 }
 
 function toPublic(row: UserRow) {
@@ -20,6 +21,7 @@ function toPublic(row: UserRow) {
     displayName: row.display_name,
     status: row.status,
     createdAt: row.created_at,
+    lastLoginAt: row.last_login_at,
   };
 }
 
@@ -37,7 +39,7 @@ adminUsersRouter.get("/", (req, res) => {
     typeof req.query.status === "string" ? req.query.status : undefined;
   const q = typeof req.query.q === "string" ? req.query.q.trim() : undefined;
 
-  let sql = `SELECT id, email, role, display_name, status, created_at FROM users WHERE 1=1`;
+  let sql = `SELECT id, email, role, display_name, status, created_at, last_login_at FROM users WHERE 1=1`;
   const params: string[] = [];
 
   if (role) {
@@ -49,8 +51,9 @@ adminUsersRouter.get("/", (req, res) => {
     params.push(status);
   }
   if (q) {
-    sql += ` AND (email LIKE ? OR display_name LIKE ?)`;
-    const like = `%${q}%`;
+    sql += ` AND (email LIKE ? ESCAPE '\\' OR display_name LIKE ? ESCAPE '\\')`;
+    const escaped = q.replace(/[\\%_]/g, "\\$&");
+    const like = `%${escaped}%`;
     params.push(like, like);
   }
   sql += ` ORDER BY id ASC`;
@@ -68,7 +71,7 @@ adminUsersRouter.get("/:id/grants", (req, res) => {
 
   const user = getDb()
     .prepare(
-      `SELECT id, email, role, display_name, status, created_at FROM users WHERE id = ?`,
+      `SELECT id, email, role, display_name, status, created_at, last_login_at FROM users WHERE id = ?`,
     )
     .get(id) as UserRow | undefined;
 
@@ -103,7 +106,7 @@ adminUsersRouter.post("/:id/disable", (req, res) => {
 
   const user = getDb()
     .prepare(
-      `SELECT id, email, role, display_name, status, created_at FROM users WHERE id = ?`,
+      `SELECT id, email, role, display_name, status, created_at, last_login_at FROM users WHERE id = ?`,
     )
     .get(id) as UserRow | undefined;
 
@@ -137,7 +140,7 @@ adminUsersRouter.post("/:id/disable", (req, res) => {
 
   const updated = getDb()
     .prepare(
-      `SELECT id, email, role, display_name, status, created_at FROM users WHERE id = ?`,
+      `SELECT id, email, role, display_name, status, created_at, last_login_at FROM users WHERE id = ?`,
     )
     .get(id) as UserRow;
 
@@ -153,12 +156,18 @@ adminUsersRouter.post("/:id/enable", (req, res) => {
 
   const user = getDb()
     .prepare(
-      `SELECT id, email, role, display_name, status, created_at FROM users WHERE id = ?`,
+      `SELECT id, email, role, display_name, status, created_at, last_login_at FROM users WHERE id = ?`,
     )
     .get(id) as UserRow | undefined;
 
   if (!user) {
     res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  // Symmetric with disable: non-super-admin cannot enable a super_admin
+  if (user.role === "super_admin" && req.authUser!.role !== "super_admin") {
+    res.status(403).json({ error: "Only super admin can enable a super admin" });
     return;
   }
 
@@ -168,7 +177,7 @@ adminUsersRouter.post("/:id/enable", (req, res) => {
 
   const updated = getDb()
     .prepare(
-      `SELECT id, email, role, display_name, status, created_at FROM users WHERE id = ?`,
+      `SELECT id, email, role, display_name, status, created_at, last_login_at FROM users WHERE id = ?`,
     )
     .get(id) as UserRow;
 

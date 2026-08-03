@@ -13,6 +13,7 @@ interface AdminUser {
   displayName: string;
   status: "active" | "disabled";
   createdAt: number;
+  lastLoginAt: number | null;
 }
 
 export function UsersPage() {
@@ -20,9 +21,16 @@ export function UsersPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [role, setRole] = useState("");
   const [status, setStatus] = useState("");
+  const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [acting, setActing] = useState<number | null>(null);
+  const [grantsFor, setGrantsFor] = useState<number | null>(null);
+  const [grantsData, setGrantsData] = useState<{
+    user: AdminUser;
+    packages: string[];
+  } | null>(null);
+  const [grantsLoading, setGrantsLoading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -31,6 +39,7 @@ export function UsersPage() {
       const query = new URLSearchParams();
       if (role) query.set("role", role);
       if (status) query.set("status", status);
+      if (q.trim()) query.set("q", q.trim());
       const res = await api<{ users: AdminUser[] }>(
         `/api/admin/users?${query.toString()}`,
       );
@@ -40,11 +49,31 @@ export function UsersPage() {
     } finally {
       setLoading(false);
     }
-  }, [role, status]);
+  }, [role, status, q]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  async function loadGrants(userId: number) {
+    setGrantsFor(userId);
+    setGrantsLoading(true);
+    try {
+      const res = await api<{ user: AdminUser; packages: string[] }>(
+        `/api/admin/users/${userId}/grants`,
+      );
+      setGrantsData(res);
+    } catch {
+      setError("授权摘要加载失败");
+    } finally {
+      setGrantsLoading(false);
+    }
+  }
+
+  function closeGrants() {
+    setGrantsFor(null);
+    setGrantsData(null);
+  }
 
   async function toggleStatus(u: AdminUser) {
     const disabling = u.status === "active";
@@ -78,6 +107,16 @@ export function UsersPage() {
 
       <div className={shared.filters}>
         <div className={shared.field}>
+          <label htmlFor="user-search">搜索</label>
+          <input
+            id="user-search"
+            type="search"
+            placeholder="姓名 / 邮箱"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+        </div>
+        <div className={shared.field}>
           <label htmlFor="user-role">角色</label>
           <select id="user-role" value={role} onChange={(e) => setRole(e.target.value)}>
             <option value="">全部</option>
@@ -109,6 +148,7 @@ export function UsersPage() {
                 <th>角色</th>
                 <th>状态</th>
                 <th>注册时间</th>
+                <th>最近登录</th>
                 <th>操作</th>
               </tr>
             </thead>
@@ -121,18 +161,35 @@ export function UsersPage() {
                   <td>{u.status === "active" ? "正常" : "已停用"}</td>
                   <td>{formatDateTime(u.createdAt)}</td>
                   <td>
-                    {u.id === me?.id ? (
-                      <span className={shared.muted}>当前账号</span>
-                    ) : (
-                      <button
-                        type="button"
-                        className={u.status === "active" ? styles.dangerBtn : undefined}
-                        disabled={acting === u.id}
-                        onClick={() => void toggleStatus(u)}
-                      >
-                        {u.status === "active" ? "停用" : "启用"}
-                      </button>
-                    )}
+                    {u.lastLoginAt ? formatDateTime(u.lastLoginAt) : "从未登录"}
+                  </td>
+                  <td>
+                    <div className={shared.btnRow}>
+                      {u.id === me?.id ? (
+                        <span className={shared.muted}>当前账号</span>
+                      ) : (
+                        <button
+                          type="button"
+                          className={u.status === "active" ? styles.dangerBtn : undefined}
+                          disabled={acting === u.id}
+                          onClick={() => void toggleStatus(u)}
+                        >
+                          {u.status === "active" ? "停用" : "启用"}
+                        </button>
+                      )}
+                      {u.role !== "eagle" ? (
+                        <button
+                          type="button"
+                          className={shared.btnGhost}
+                          disabled={grantsLoading && grantsFor === u.id}
+                          onClick={() =>
+                            grantsFor === u.id ? closeGrants() : void loadGrants(u.id)
+                          }
+                        >
+                          {grantsFor === u.id ? "收起授权" : "授权摘要"}
+                        </button>
+                      ) : null}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -140,6 +197,23 @@ export function UsersPage() {
           </table>
         </div>
       )}
+
+      {grantsData ? (
+        <div className={shared.panel} style={{ marginTop: 16 }}>
+          <h3>
+            {grantsData.user.displayName}（{grantsData.user.email}）的权限包
+          </h3>
+          {grantsData.packages.length === 0 ? (
+            <p className={shared.muted}>未授予任何权限包</p>
+          ) : (
+            <ul>
+              {grantsData.packages.map((code) => (
+                <li key={code}>{code}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ) : null}
     </>
   );
 }

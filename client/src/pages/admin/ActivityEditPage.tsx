@@ -103,13 +103,11 @@ export function ActivityEditPage() {
         });
         navigate(`/admin/activities/${res.activity.id}/edit`, { replace: true });
       } else {
+        // PUT already handles status (including publish) in a single atomic request
         await api(`/api/admin/activities/${id}`, {
           method: "PUT",
           body: JSON.stringify(payload),
         });
-        if (publish) {
-          await api(`/api/admin/activities/${id}/publish`, { method: "POST" });
-        }
         void load();
       }
     } catch (err) {
@@ -221,7 +219,7 @@ export function ActivityEditPage() {
         </div>
         <div className={shared.btnRow}>
           <button type="submit" className={shared.btnSecondary} disabled={saving}>
-            存草稿
+            {isNew ? "存草稿" : "仅保存"}
           </button>
           <button
             type="button"
