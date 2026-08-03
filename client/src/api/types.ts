@@ -14,6 +14,7 @@ export interface ActivitySummary {
   startAt: number;
   endAt: number;
   enrollDeadline: number;
+  pointApplyDeadline: number | null;
   targetPoints: number;
   featured: boolean;
 }

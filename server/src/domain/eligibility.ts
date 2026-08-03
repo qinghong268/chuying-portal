@@ -12,10 +12,18 @@ export function canApplyActivityReflection(input: {
   mode: "online" | "offline";
   progressPercent: number;
   activityEndAt: number;
+  pointApplyDeadline?: number | null;
   now: number;
 }): { ok: true } | { ok: false; reason: string } {
   if (!input.enrolled) {
     return { ok: false, reason: "not enrolled in this activity" };
+  }
+
+  if (
+    input.pointApplyDeadline != null &&
+    input.now > input.pointApplyDeadline
+  ) {
+    return { ok: false, reason: "point apply channel closed" };
   }
 
   if (input.mode === "online") {

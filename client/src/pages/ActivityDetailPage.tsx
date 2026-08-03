@@ -143,11 +143,6 @@ export function ActivityDetailPage() {
           <h1 className={styles.title}>{activity.title}</h1>
           <ul className={styles.infoList}>
             <li>时间：{formatDateTime(activity.startAt)} ~ {formatDateTime(activity.endAt)}</li>
-            {activity.mode === "online" ? (
-              <li>报名截止：{formatDateTime(activity.enrollDeadline)}</li>
-            ) : (
-              <li>线下活动：活动开始前可报名</li>
-            )}
             <li>目标积分：{activity.targetPoints}</li>
           </ul>
 
@@ -159,7 +154,7 @@ export function ActivityDetailPage() {
           <section className={styles.prose}>
             <h2>报名与积分规则摘要</h2>
             <ul>
-              <li>线上：报名截止前可报；观看进度 ≥ {WATCH_PROGRESS_THRESHOLD}% 可申请心得</li>
+              <li>线上：活动开始前可报名；观看进度 ≥ {WATCH_PROGRESS_THRESHOLD}% 可申请心得</li>
               <li>线下：活动开始前可报；结束后 24 小时内可申请心得</li>
               <li>心得正文 300–400 字（在个人中心发起申请）</li>
             </ul>

@@ -135,10 +135,10 @@ describe("smoke — enrollments canApplyType1 requires published activity", () =
 
     const insert = getDb()
       .prepare(
-        `INSERT INTO activities (title, description, mode, start_at, end_at, enroll_deadline, target_points, status, featured, created_at)
-         VALUES (?, ?, 'online', ?, ?, ?, 10, 'published', 0, ?)`,
+        `INSERT INTO activities (title, description, mode, start_at, end_at, enroll_deadline, point_apply_deadline, target_points, status, featured, created_at)
+         VALUES (?, ?, 'online', ?, ?, ?, ?, 10, 'published', 0, ?)`,
       )
-      .run("下架测试活动", "desc", now + day, now + 3 * day, now + day, now);
+      .run("下架测试活动", "desc", now + day, now + 3 * day, now + day, now + 4 * day, now);
     const activityId = Number(insert.lastInsertRowid);
 
     await eagle.post(`/api/activities/${activityId}/enroll`);

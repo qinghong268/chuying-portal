@@ -7,7 +7,6 @@ interface ActivityRow {
   id: number;
   mode: "online" | "offline";
   start_at: number;
-  enroll_deadline: number;
   status: string;
 }
 
@@ -26,7 +25,7 @@ enrollmentsRouter.post(
 
     const activity = getDb()
       .prepare(
-        `SELECT id, mode, start_at, enroll_deadline, status
+        `SELECT id, mode, start_at, status
          FROM activities WHERE id = ? AND status = 'published'`,
       )
       .get(activityId) as ActivityRow | undefined;
@@ -38,9 +37,7 @@ enrollmentsRouter.post(
 
     const now = Date.now();
     const enrollCheck = canEnrollActivity({
-      mode: activity.mode,
       startAt: activity.start_at,
-      enrollDeadline: activity.enroll_deadline,
       now,
     });
     if (!enrollCheck.ok) {

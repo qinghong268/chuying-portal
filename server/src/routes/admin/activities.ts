@@ -12,6 +12,7 @@ interface ActivityRow {
   start_at: number;
   end_at: number;
   enroll_deadline: number;
+  point_apply_deadline: number | null;
   target_points: number;
   status: "draft" | "published" | "archived";
   featured: number;
@@ -27,11 +28,19 @@ function toPublic(row: ActivityRow) {
     startAt: row.start_at,
     endAt: row.end_at,
     enrollDeadline: row.enroll_deadline,
+    pointApplyDeadline: row.point_apply_deadline,
     targetPoints: row.target_points,
     status: row.status,
     featured: row.featured === 1,
     createdAt: row.created_at,
   };
+}
+
+function publishRequiresPointApplyDeadline(
+  status: "draft" | "published" | "archived",
+  pointApplyDeadline: number | null | undefined,
+): boolean {
+  return status === "published" && pointApplyDeadline == null;
 }
 
 const createSchema = z.object({
@@ -40,7 +49,7 @@ const createSchema = z.object({
   mode: z.enum(["online", "offline"]),
   startAt: z.number().int().positive(),
   endAt: z.number().int().positive(),
-  enrollDeadline: z.number().int().positive(),
+  pointApplyDeadline: z.number().int().positive().nullable().optional(),
   targetPoints: z.number().int().min(0).max(9999).default(0),
   featured: z.boolean().optional().default(false),
   status: z.enum(["draft", "published", "archived"]).optional(),
@@ -99,12 +108,19 @@ adminActivitiesRouter.post("/", (req, res) => {
 
   const now = Date.now();
   const status = data.status ?? "draft";
+  const pointApplyDeadline = data.pointApplyDeadline ?? null;
+
+  if (publishRequiresPointApplyDeadline(status, pointApplyDeadline)) {
+    res.status(400).json({ error: "pointApplyDeadline is required to publish" });
+    return;
+  }
+
   const result = getDb()
     .prepare(
       `INSERT INTO activities
        (title, description, mode, start_at, end_at, enroll_deadline,
-        target_points, status, featured, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        point_apply_deadline, target_points, status, featured, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       data.title,
@@ -112,7 +128,8 @@ adminActivitiesRouter.post("/", (req, res) => {
       data.mode,
       data.startAt,
       data.endAt,
-      data.enrollDeadline,
+      data.startAt,
+      pointApplyDeadline,
       data.targetPoints,
       status,
       data.featured ? 1 : 0,
@@ -173,7 +190,10 @@ adminActivitiesRouter.put("/:id", (req, res) => {
   const mode = data.mode ?? existing.mode;
   const startAt = data.startAt ?? existing.start_at;
   const endAt = data.endAt ?? existing.end_at;
-  const enrollDeadline = data.enrollDeadline ?? existing.enroll_deadline;
+  const pointApplyDeadline =
+    data.pointApplyDeadline !== undefined
+      ? data.pointApplyDeadline
+      : existing.point_apply_deadline;
   const targetPoints = data.targetPoints ?? existing.target_points;
   const status = data.status ?? existing.status;
   const featured =
@@ -184,11 +204,17 @@ adminActivitiesRouter.put("/:id", (req, res) => {
     return;
   }
 
+  if (publishRequiresPointApplyDeadline(status, pointApplyDeadline)) {
+    res.status(400).json({ error: "pointApplyDeadline is required to publish" });
+    return;
+  }
+
   getDb()
     .prepare(
       `UPDATE activities
        SET title = ?, description = ?, mode = ?, start_at = ?, end_at = ?,
-           enroll_deadline = ?, target_points = ?, status = ?, featured = ?
+           enroll_deadline = ?, point_apply_deadline = ?, target_points = ?,
+           status = ?, featured = ?
        WHERE id = ?`,
     )
     .run(
@@ -197,7 +223,8 @@ adminActivitiesRouter.put("/:id", (req, res) => {
       mode,
       startAt,
       endAt,
-      enrollDeadline,
+      startAt,
+      pointApplyDeadline,
       targetPoints,
       status,
       featured,
@@ -227,8 +254,15 @@ adminActivitiesRouter.post("/:id/publish", (req, res) => {
     return;
   }
 
+  if (existing.point_apply_deadline == null) {
+    res.status(400).json({ error: "pointApplyDeadline is required to publish" });
+    return;
+  }
+
   getDb()
-    .prepare(`UPDATE activities SET status = 'published' WHERE id = ?`)
+    .prepare(
+      `UPDATE activities SET status = 'published', enroll_deadline = start_at WHERE id = ?`,
+    )
     .run(id);
 
   const updated = getDb()

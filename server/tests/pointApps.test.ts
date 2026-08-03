@@ -79,10 +79,10 @@ describe("point applications — online progress gate", () => {
     const day = 24 * 60 * 60 * 1000;
     const insert = getDb()
       .prepare(
-        `INSERT INTO activities (title, description, mode, start_at, end_at, enroll_deadline, target_points, status, featured, created_at)
-         VALUES (?, ?, 'online', ?, ?, ?, 10, 'published', 0, ?)`,
+        `INSERT INTO activities (title, description, mode, start_at, end_at, enroll_deadline, point_apply_deadline, target_points, status, featured, created_at)
+         VALUES (?, ?, 'online', ?, ?, ?, ?, 10, 'published', 0, ?)`,
       )
-      .run("进度98活动", "desc", now + day, now + 3 * day, now + day, now);
+      .run("进度98活动", "desc", now + day, now + 3 * day, now + day, now + 4 * day, now);
     const activityId = Number(insert.lastInsertRowid);
 
     await eagle.post(`/api/activities/${activityId}/enroll`);
@@ -130,10 +130,10 @@ describe("point applications — double approve", () => {
     const day = 24 * 60 * 60 * 1000;
     const insert = getDb()
       .prepare(
-        `INSERT INTO activities (title, description, mode, start_at, end_at, enroll_deadline, target_points, status, featured, created_at)
-         VALUES (?, ?, 'online', ?, ?, ?, 10, 'published', 0, ?)`,
+        `INSERT INTO activities (title, description, mode, start_at, end_at, enroll_deadline, point_apply_deadline, target_points, status, featured, created_at)
+         VALUES (?, ?, 'online', ?, ?, ?, ?, 10, 'published', 0, ?)`,
       )
-      .run("双审活动", "desc", now + day, now + 3 * day, now + day, now);
+      .run("双审活动", "desc", now + day, now + 3 * day, now + day, now + 4 * day, now);
     const activityId = Number(insert.lastInsertRowid);
 
     await eagle.post(`/api/activities/${activityId}/enroll`);
@@ -175,10 +175,10 @@ describe("point applications — reject then re-submit", () => {
     const day = 24 * 60 * 60 * 1000;
     const insert = getDb()
       .prepare(
-        `INSERT INTO activities (title, description, mode, start_at, end_at, enroll_deadline, target_points, status, featured, created_at)
-         VALUES (?, ?, 'online', ?, ?, ?, 10, 'published', 0, ?)`,
+        `INSERT INTO activities (title, description, mode, start_at, end_at, enroll_deadline, point_apply_deadline, target_points, status, featured, created_at)
+         VALUES (?, ?, 'online', ?, ?, ?, ?, 10, 'published', 0, ?)`,
       )
-      .run("驳回再提活动", "desc", now + day, now + 3 * day, now + day, now);
+      .run("驳回再提活动", "desc", now + day, now + 3 * day, now + day, now + 4 * day, now);
     const activityId = Number(insert.lastInsertRowid);
 
     await eagle.post(`/api/activities/${activityId}/enroll`);

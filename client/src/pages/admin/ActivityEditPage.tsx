@@ -15,7 +15,7 @@ interface AdminActivity {
   mode: "online" | "offline";
   startAt: number;
   endAt: number;
-  enrollDeadline: number;
+  pointApplyDeadline: number | null;
   targetPoints: number;
   status: "draft" | "published" | "archived";
   featured: boolean;
@@ -30,7 +30,7 @@ const defaultForm = () => {
     mode: "online" as "online" | "offline",
     startAt: tsToDatetimeLocal(now + day),
     endAt: tsToDatetimeLocal(now + 3 * day),
-    enrollDeadline: tsToDatetimeLocal(now + day),
+    pointApplyDeadline: tsToDatetimeLocal(now + 4 * day),
     targetPoints: 10,
     featured: false,
   };
@@ -57,7 +57,9 @@ export function ActivityEditPage() {
         mode: a.mode,
         startAt: tsToDatetimeLocal(a.startAt),
         endAt: tsToDatetimeLocal(a.endAt),
-        enrollDeadline: tsToDatetimeLocal(a.enrollDeadline),
+        pointApplyDeadline: a.pointApplyDeadline
+          ? tsToDatetimeLocal(a.pointApplyDeadline)
+          : "",
         targetPoints: a.targetPoints,
         featured: a.featured,
       });
@@ -82,7 +84,9 @@ export function ActivityEditPage() {
       mode: form.mode,
       startAt: datetimeLocalToTs(form.startAt),
       endAt: datetimeLocalToTs(form.endAt),
-      enrollDeadline: datetimeLocalToTs(form.enrollDeadline),
+      pointApplyDeadline: form.pointApplyDeadline
+        ? datetimeLocalToTs(form.pointApplyDeadline)
+        : null,
       targetPoints: form.targetPoints,
       featured: form.featured,
     };
@@ -180,14 +184,18 @@ export function ActivityEditPage() {
             />
           </div>
           <div className={shared.field}>
-            <label htmlFor="act-deadline">报名截止</label>
+            <label htmlFor="act-point-deadline">积分申请通道截止</label>
             <input
-              id="act-deadline"
+              id="act-point-deadline"
               type="datetime-local"
-              required
-              value={form.enrollDeadline}
-              onChange={(e) => setForm({ ...form, enrollDeadline: e.target.value })}
+              value={form.pointApplyDeadline}
+              onChange={(e) =>
+                setForm({ ...form, pointApplyDeadline: e.target.value })
+              }
             />
+            <p className={shared.muted}>
+              发布前必填。报名截止与开始时间一致，无需单独设置。
+            </p>
           </div>
           <div className={shared.field}>
             <label htmlFor="act-points">目标积分</label>

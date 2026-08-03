@@ -45,6 +45,18 @@ describe("canApplyActivityReflection", () => {
       });
       expect(result).toEqual({ ok: true });
     });
+
+    it("rejects after point apply channel closes", () => {
+      const result = canApplyActivityReflection({
+        enrolled: true,
+        mode: "online",
+        progressPercent: 99,
+        activityEndAt,
+        pointApplyDeadline: activityEndAt - 1,
+        now: activityEndAt,
+      });
+      expect(result).toEqual({ ok: false, reason: "point apply channel closed" });
+    });
   });
 
   describe("offline mode", () => {

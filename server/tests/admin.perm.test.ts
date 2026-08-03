@@ -190,12 +190,13 @@ describe("admin activities + dashboard + users", () => {
       mode: "online",
       startAt: now + day,
       endAt: now + 3 * day,
-      enrollDeadline: now + day,
+      pointApplyDeadline: now + 4 * day,
       targetPoints: 8,
       featured: false,
     });
     expect(createRes.status).toBe(201);
     expect(createRes.body.activity.status).toBe("draft");
+    expect(createRes.body.activity.enrollDeadline).toBe(now + day);
     const activityId = createRes.body.activity.id as number;
 
     const pubRes = await admin.post(

@@ -16,7 +16,7 @@ interface AdminActivity {
   mode: "online" | "offline";
   startAt: number;
   endAt: number;
-  enrollDeadline: number;
+  pointApplyDeadline: number | null;
   targetPoints: number;
   status: "draft" | "published" | "archived";
   featured: boolean;

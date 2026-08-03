@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS activities (
   start_at INTEGER NOT NULL,
   end_at INTEGER NOT NULL,
   enroll_deadline INTEGER NOT NULL,
+  point_apply_deadline INTEGER,
   target_points INTEGER NOT NULL DEFAULT 0,
   status TEXT NOT NULL DEFAULT 'published' CHECK (status IN ('draft', 'published', 'archived')),
   featured INTEGER NOT NULL DEFAULT 0,

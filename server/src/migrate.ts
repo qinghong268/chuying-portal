@@ -24,8 +24,23 @@ function migrateContentBlockDraftColumns(): void {
   `);
 }
 
+function migrateActivityDeadlineColumns(): void {
+  addColumnIfMissing("activities", "point_apply_deadline", "INTEGER");
+  const dayMs = 24 * 60 * 60 * 1000;
+  getDb().exec(`
+    UPDATE activities SET enroll_deadline = start_at;
+    UPDATE activities
+    SET point_apply_deadline = end_at + ${dayMs}
+    WHERE point_apply_deadline IS NULL AND mode = 'online';
+    UPDATE activities
+    SET point_apply_deadline = end_at
+    WHERE point_apply_deadline IS NULL AND mode = 'offline';
+  `);
+}
+
 export function migrate(): void {
   const sql = readFileSync(join(__dirname, "migrate.sql"), "utf8");
   getDb().exec(sql);
   migrateContentBlockDraftColumns();
+  migrateActivityDeadlineColumns();
 }

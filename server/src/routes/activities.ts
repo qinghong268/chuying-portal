@@ -11,6 +11,7 @@ interface ActivityRow {
   start_at: number;
   end_at: number;
   enroll_deadline: number;
+  point_apply_deadline: number | null;
   target_points: number;
   status: string;
   featured: number;
@@ -26,6 +27,7 @@ function toActivitySummary(row: ActivityRow) {
     startAt: row.start_at,
     endAt: row.end_at,
     enrollDeadline: row.enroll_deadline,
+    pointApplyDeadline: row.point_apply_deadline,
     targetPoints: row.target_points,
     featured: row.featured === 1,
   };
@@ -35,7 +37,7 @@ function findPublishedActivity(id: number): ActivityRow | undefined {
   return getDb()
     .prepare(
       `SELECT id, title, description, mode, start_at, end_at, enroll_deadline,
-              target_points, status, featured, created_at
+              point_apply_deadline, target_points, status, featured, created_at
        FROM activities
        WHERE id = ? AND status = 'published'`,
     )
@@ -66,7 +68,7 @@ activitiesRouter.get("/", (_req, res) => {
   const rows = getDb()
     .prepare(
       `SELECT id, title, description, mode, start_at, end_at, enroll_deadline,
-              target_points, status, featured, created_at
+              point_apply_deadline, target_points, status, featured, created_at
        FROM activities
        WHERE status = 'published'
        ORDER BY start_at ASC`,
@@ -87,7 +89,7 @@ activitiesRouter.get("/featured", (req, res) => {
   const rows = getDb()
     .prepare(
       `SELECT id, title, description, mode, start_at, end_at, enroll_deadline,
-              target_points, status, featured, created_at
+              point_apply_deadline, target_points, status, featured, created_at
        FROM activities
        WHERE status = 'published' AND featured = 1
        ORDER BY start_at ASC
@@ -113,9 +115,7 @@ activitiesRouter.get("/:id", optionalAuth, (req, res) => {
 
   const now = Date.now();
   const enrollCheck = canEnrollActivity({
-    mode: activity.mode,
     startAt: activity.start_at,
-    enrollDeadline: activity.enroll_deadline,
     now,
   });
 

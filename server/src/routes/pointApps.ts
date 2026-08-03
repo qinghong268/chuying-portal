@@ -16,6 +16,7 @@ interface ActivityRow {
   title: string;
   mode: "online" | "offline";
   end_at: number;
+  point_apply_deadline: number | null;
   target_points: number;
   status: string;
 }
@@ -129,7 +130,7 @@ pointAppsRouter.get("/enrollments", requireAuth, requireRole("eagle"), (req, res
     .prepare(
       `SELECT e.id AS enrollment_id, e.enrolled_at, e.status AS enrollment_status,
               a.id AS activity_id, a.title, a.mode, a.start_at, a.end_at,
-              a.target_points, a.status AS activity_status
+              a.point_apply_deadline, a.target_points, a.status AS activity_status
        FROM enrollments e
        INNER JOIN activities a ON a.id = e.activity_id
        WHERE e.user_id = ? AND e.status = 'enrolled'
@@ -144,6 +145,7 @@ pointAppsRouter.get("/enrollments", requireAuth, requireRole("eagle"), (req, res
     mode: "online" | "offline";
     start_at: number;
     end_at: number;
+    point_apply_deadline: number | null;
     target_points: number;
     activity_status: string;
   }>;
@@ -156,6 +158,7 @@ pointAppsRouter.get("/enrollments", requireAuth, requireRole("eagle"), (req, res
       mode: row.mode,
       progressPercent,
       activityEndAt: row.end_at,
+      pointApplyDeadline: row.point_apply_deadline,
       now,
     });
 
@@ -171,7 +174,9 @@ pointAppsRouter.get("/enrollments", requireAuth, requireRole("eagle"), (req, res
       applyBlockedReason = "已有待审或已通过的心得申请";
     } else if (!eligibility.ok) {
       canApplyType1 = false;
-      if (row.mode === "online") {
+      if (eligibility.reason === "point apply channel closed") {
+        applyBlockedReason = "积分申请通道已关闭";
+      } else if (row.mode === "online") {
         applyBlockedReason = `进度需达到 ${WATCH_PROGRESS_THRESHOLD}%`;
       } else if (now < row.end_at) {
         applyBlockedReason = "活动结束后 24 小时内可申请";
@@ -218,7 +223,7 @@ pointAppsRouter.get(
 
     const activities = getDb()
       .prepare(
-        `SELECT a.id, a.title, a.mode, a.end_at, a.target_points, a.status
+        `SELECT a.id, a.title, a.mode, a.end_at, a.point_apply_deadline, a.target_points, a.status
          FROM activities a
          INNER JOIN enrollments e
            ON e.activity_id = a.id AND e.user_id = ? AND e.status = 'enrolled'
@@ -240,6 +245,7 @@ pointAppsRouter.get(
           mode: activity.mode,
           progressPercent,
           activityEndAt: activity.end_at,
+          pointApplyDeadline: activity.point_apply_deadline,
           now,
         });
         return check.ok;
@@ -321,7 +327,7 @@ pointAppsRouter.post(
 
       const activity = getDb()
         .prepare(
-          `SELECT id, title, mode, end_at, target_points, status
+          `SELECT id, title, mode, end_at, point_apply_deadline, target_points, status
            FROM activities WHERE id = ? AND status = 'published'`,
         )
         .get(body.activityId) as ActivityRow | undefined;
@@ -347,6 +353,7 @@ pointAppsRouter.post(
         mode: activity.mode,
         progressPercent,
         activityEndAt: activity.end_at,
+        pointApplyDeadline: activity.point_apply_deadline,
         now,
       });
 
