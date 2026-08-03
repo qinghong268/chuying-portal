@@ -58,7 +58,7 @@ export function DashboardPage() {
               <span className={styles.statValue}>{summary.pendingJoinCount}</span>
             </div>
             <div className={`${shared.panel} ${styles.statCard}`}>
-              <span className={styles.statLabel}>待批积分</span>
+              <span className={styles.statLabel}>待审积分</span>
               <span className={styles.statValue}>{summary.pendingPointAppCount}</span>
             </div>
             <div className={`${shared.panel} ${styles.statCard}`}>

@@ -95,7 +95,7 @@ export function ConsolePage() {
             )}
             {(hasPermission(user, "point_review") || summary) && (
               <div className={`${shared.panel} ${styles.statCard}`}>
-                <span className={styles.statLabel}>待批积分</span>
+                <span className={styles.statLabel}>待审积分</span>
                 <span className={styles.statValue}>{pendingPoints}</span>
                 {hasPermission(user, "point_review") ? (
                   <Link to="/admin/point-apps?status=pending" className={shared.btnGhost}>
