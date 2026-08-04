@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { api } from "../../api/client";
+import { ApiError, api } from "../../api/client";
 import { contentStatusLabel } from "../../lib/adminLabels";
 import { formatDateTime } from "../../lib/datetime";
 import shared from "../shared.module.css";
@@ -12,6 +12,10 @@ interface ContentBlock {
   body: string;
   status: "draft" | "published";
   updatedAt: number;
+  coverUrl?: string;
+  linkUrl?: string;
+  linkLabel?: string;
+  sortOrder?: number;
 }
 
 export function ContentPage() {
@@ -19,10 +23,18 @@ export function ContentPage() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [coverUrl, setCoverUrl] = useState("");
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkLabel, setLinkLabel] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+
+  const [showCreate, setShowCreate] = useState(false);
+  const [newKey, setNewKey] = useState("");
+  const [newTitle, setNewTitle] = useState("");
+  const [creating, setCreating] = useState(false);
 
   const selected = blocks.find((b) => b.id === selectedId) ?? null;
 
@@ -50,8 +62,11 @@ export function ContentPage() {
     if (selected) {
       setTitle(selected.title);
       setBody(selected.body);
+      setCoverUrl(selected.coverUrl ?? "");
+      setLinkUrl(selected.linkUrl ?? "");
+      setLinkLabel(selected.linkLabel ?? "");
     }
-  }, [selected?.id, selected?.title, selected?.body]);
+  }, [selected?.id]);
 
   async function saveDraft() {
     if (!selectedId) return;
@@ -61,7 +76,10 @@ export function ContentPage() {
     try {
       const res = await api<{ block: ContentBlock }>(
         `/api/admin/content/blocks/${selectedId}`,
-        { method: "PUT", body: JSON.stringify({ title, body }) },
+        {
+          method: "PUT",
+          body: JSON.stringify({ title, body, coverUrl, linkUrl, linkLabel }),
+        },
       );
       setBlocks((prev) => prev.map((b) => (b.id === res.block.id ? res.block : b)));
       setMessage("草稿已保存");
@@ -80,7 +98,7 @@ export function ContentPage() {
     try {
       await api(`/api/admin/content/blocks/${selectedId}`, {
         method: "PUT",
-        body: JSON.stringify({ title, body }),
+        body: JSON.stringify({ title, body, coverUrl, linkUrl, linkLabel }),
       });
       const res = await api<{ block: ContentBlock }>(
         `/api/admin/content/blocks/${selectedId}/publish`,
@@ -95,6 +113,74 @@ export function ContentPage() {
     }
   }
 
+  async function createBlock() {
+    const key = newKey.trim();
+    const name = newTitle.trim();
+    if (!key || !name) {
+      setError("请填写 Key 与标题");
+      return;
+    }
+    setCreating(true);
+    setMessage(null);
+    setError(null);
+    try {
+      const res = await api<{ block: ContentBlock }>("/api/admin/content/blocks", {
+        method: "POST",
+        body: JSON.stringify({ block_key: key, title: name }),
+      });
+      setNewKey("");
+      setNewTitle("");
+      setShowCreate(false);
+      await load();
+      setSelectedId(res.block.id);
+      setMessage("内容块已创建，可继续编辑");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "创建失败");
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function deleteBlock(block: ContentBlock) {
+    if (!window.confirm(`确定删除内容块「${block.key}」？删除后不可恢复。`)) return;
+    setError(null);
+    setMessage(null);
+    try {
+      await api(`/api/admin/content/blocks/${block.id}`, { method: "DELETE" });
+      if (selectedId === block.id) {
+        setSelectedId(null);
+        setTitle("");
+        setBody("");
+        setCoverUrl("");
+        setLinkUrl("");
+        setLinkLabel("");
+      }
+      await load();
+      setMessage("内容块已删除");
+    } catch {
+      setError("删除失败");
+    }
+  }
+
+  async function moveBlock(index: number, direction: -1 | 1) {
+    const target = index + direction;
+    if (target < 0 || target >= blocks.length) return;
+    setError(null);
+    setMessage(null);
+    try {
+      const reordered = [...blocks];
+      [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+      const orders = reordered.map((b, i) => ({ id: b.id, sort_order: i }));
+      await api("/api/admin/content/blocks/sort", {
+        method: "PATCH",
+        body: JSON.stringify({ orders }),
+      });
+      await load();
+    } catch {
+      setError("排序保存失败");
+    }
+  }
+
   return (
     <>
       <div className={styles.pageHead}>
@@ -102,6 +188,16 @@ export function ContentPage() {
           <p className={shared.breadcrumb}>内容运营</p>
           <h1 className={styles.pageHeadTitle}>内容运营</h1>
         </div>
+        <button
+          type="button"
+          className={shared.btnAccent}
+          onClick={() => {
+            setError(null);
+            setShowCreate(true);
+          }}
+        >
+          新建内容块
+        </button>
       </div>
 
       {error ? <p className={shared.error}>{error}</p> : null}
@@ -120,10 +216,11 @@ export function ContentPage() {
                     <th>Key</th>
                     <th>标题</th>
                     <th>状态</th>
+                    <th>操作</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {blocks.map((block) => (
+                  {blocks.map((block, index) => (
                     <tr
                       key={block.id}
                       style={{
@@ -135,6 +232,42 @@ export function ContentPage() {
                       <td>{block.key}</td>
                       <td>{block.title}</td>
                       <td>{contentStatusLabel(block.status)}</td>
+                      <td>
+                        <div className={styles.inlineActions}>
+                          <button
+                            type="button"
+                            title="上移"
+                            disabled={index === 0}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void moveBlock(index, -1);
+                            }}
+                          >
+                            ↑
+                          </button>
+                          <button
+                            type="button"
+                            title="下移"
+                            disabled={index === blocks.length - 1}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void moveBlock(index, 1);
+                            }}
+                          >
+                            ↓
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.dangerBtn}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void deleteBlock(block);
+                            }}
+                          >
+                            删除
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -168,6 +301,33 @@ export function ContentPage() {
                       rows={12}
                     />
                   </div>
+                  <div className={shared.field}>
+                    <label htmlFor="block-cover">封面图 URL</label>
+                    <input
+                      id="block-cover"
+                      value={coverUrl}
+                      onChange={(e) => setCoverUrl(e.target.value)}
+                      placeholder="https://example.com/cover.jpg"
+                    />
+                  </div>
+                  <div className={shared.field}>
+                    <label htmlFor="block-link">跳转链接</label>
+                    <input
+                      id="block-link"
+                      value={linkUrl}
+                      onChange={(e) => setLinkUrl(e.target.value)}
+                      placeholder="https://example.com/page"
+                    />
+                  </div>
+                  <div className={shared.field}>
+                    <label htmlFor="block-link-label">按钮文案</label>
+                    <input
+                      id="block-link-label"
+                      value={linkLabel}
+                      onChange={(e) => setLinkLabel(e.target.value)}
+                      placeholder="了解更多"
+                    />
+                  </div>
                 </div>
                 <div className={shared.btnRow}>
                   <button
@@ -194,6 +354,66 @@ export function ContentPage() {
           </div>
         </div>
       )}
+
+      {showCreate ? (
+        <div
+          className={styles.modalOverlay}
+          onClick={() => {
+            setError(null);
+            setShowCreate(false);
+          }}
+        >
+          <div
+            className={styles.modal}
+            role="dialog"
+            aria-modal="true"
+            aria-label="新建内容块"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className={shared.sectionTitle}>新建内容块</h2>
+            <div className={shared.formStack}>
+              <div className={shared.field}>
+                <label htmlFor="new-block-key">Key</label>
+                <input
+                  id="new-block-key"
+                  value={newKey}
+                  onChange={(e) => setNewKey(e.target.value)}
+                  placeholder="home_partners"
+                />
+              </div>
+              <div className={shared.field}>
+                <label htmlFor="new-block-title">标题</label>
+                <input
+                  id="new-block-title"
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  placeholder="合作伙伴"
+                />
+              </div>
+            </div>
+            <div className={shared.btnRow}>
+              <button
+                type="button"
+                className={shared.btnSecondary}
+                onClick={() => {
+                  setError(null);
+                  setShowCreate(false);
+                }}
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                className={shared.btnPrimary}
+                disabled={creating}
+                onClick={() => void createBlock()}
+              >
+                创建
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }

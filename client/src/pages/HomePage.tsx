@@ -16,16 +16,6 @@ const DEFAULT_HERO = {
   body: "了解计划、参与活动与课程，开启成长路径。宣传素材由运营团队后续补充。",
 };
 
-const PLAN_HIGHLIGHTS = [
-  { title: "实践导向", desc: "通过活动与课程串联学习与落地实践。" },
-  { title: "积分成长", desc: "完成活动后可按规则申请心得与积分。" },
-  { title: "开放加入", desc: "提交申请经审核后即可使用雏英身份。" },
-];
-
-function pickBlock(blocks: ContentBlock[], key: string): ContentBlock | undefined {
-  return blocks.find((b) => b.key === key);
-}
-
 export function HomePage() {
   const [blocks, setBlocks] = useState<ContentBlock[]>([]);
   const [activities, setActivities] = useState<ActivitySummary[]>([]);
@@ -65,17 +55,22 @@ export function HomePage() {
     };
   }, []);
 
-  const hero = useMemo(() => {
-    const block = pickBlock(blocks, "home_hero");
-    return {
-      title: block?.title || DEFAULT_HERO.title,
-      headline: DEFAULT_HERO.headline,
-      body: block?.body || DEFAULT_HERO.body,
-    };
+  // The hero block stays the FIRST element: prefer home_hero, else first block.
+  const heroBlock = useMemo(() => {
+    if (blocks.length === 0) return null;
+    return blocks.find((b) => b.key === "home_hero") ?? blocks[0];
   }, [blocks]);
 
-  const plan = pickBlock(blocks, "home_plan_promo");
-  const company = pickBlock(blocks, "home_company_promo");
+  const hero = {
+    title: heroBlock?.title || DEFAULT_HERO.title,
+    headline: DEFAULT_HERO.headline,
+    body: heroBlock?.body || DEFAULT_HERO.body,
+  };
+
+  // Render the remaining blocks dynamically below the hero.
+  const contentBlocks = heroBlock
+    ? blocks.filter((b) => b.key !== heroBlock.key)
+    : blocks;
 
   return (
     <div className={shared.page}>
@@ -91,9 +86,16 @@ export function HomePage() {
             <Link to="/activities" className={styles.ctaSecondary}>
               查看活动
             </Link>
-            <a href="#company" className={styles.ctaLink}>
-              了解软通 ↓
-            </a>
+            {heroBlock?.linkUrl ? (
+              <a
+                href={heroBlock.linkUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.ctaLink}
+              >
+                {heroBlock.linkLabel || "了解更多"}
+              </a>
+            ) : null}
           </div>
         </div>
       </section>
@@ -101,66 +103,43 @@ export function HomePage() {
       <div className={shared.container}>
         {error ? <p className={shared.error}>{error}</p> : null}
 
-        <section className={shared.section} aria-labelledby="plan-promo-title">
-          <div className={styles.promoGrid}>
-            <div className={styles.promoCopy}>
-              <h2 id="plan-promo-title" className={shared.sectionTitle}>
-                {plan?.title || "雏英计划宣传"}
-              </h2>
-              <p>
-                {plan?.body ||
-                  "雏英计划面向青年人才，提供学习、实践与成长机会。具体方案与细则以正式发布为准。"}
-              </p>
-              <ul className={styles.highlights}>
-                {PLAN_HIGHLIGHTS.map((item) => (
-                  <li key={item.title}>
-                    <strong>{item.title}</strong>
-                    <span className={shared.muted}>{item.desc}</span>
-                  </li>
-                ))}
-              </ul>
+        {contentBlocks.map((block) => (
+          <section
+            key={block.key}
+            id={block.key}
+            className={shared.section}
+            aria-labelledby={`block-${block.key}`}
+          >
+            <h2 id={`block-${block.key}`} className={shared.sectionTitle}>
+              {block.title}
+            </h2>
+            {block.coverUrl ? (
+              <img
+                src={block.coverUrl}
+                alt={block.title}
+                className={styles.blockCover}
+              />
+            ) : null}
+            {block.body ? (
+              <div
+                className={styles.blockBody}
+                dangerouslySetInnerHTML={{ __html: block.body }}
+              />
+            ) : null}
+            {block.linkUrl ? (
               <div className={shared.btnRow}>
-                <Link to="/about" className={shared.btnPrimary}>
-                  了解更多
-                </Link>
-                <Link to="/join" className={shared.btnAccent}>
-                  加入我们
-                </Link>
+                <a
+                  href={block.linkUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={shared.btnPrimary}
+                >
+                  {block.linkLabel || "了解更多"}
+                </a>
               </div>
-            </div>
-            <div className={styles.mediaPlaceholder} aria-hidden="true">
-              计划主视觉占位
-              <br />
-              [待运营提供]
-            </div>
-          </div>
-        </section>
-
-        <section
-          id="company"
-          className={`${shared.section} ${styles.company}`}
-          aria-labelledby="company-promo-title"
-        >
-          <div className={styles.companyInner}>
-            <div className={styles.mediaPlaceholder} aria-hidden="true">
-              公司宣传素材占位
-              <br />
-              [待运营提供]
-            </div>
-            <div className={styles.promoCopy}>
-              <h2 id="company-promo-title" className={shared.sectionTitle}>
-                {company?.title || "软通智慧"}
-              </h2>
-              <p>
-                {company?.body ||
-                  "软通智慧致力于数字化与智能化解决方案。公司介绍与案例素材由运营团队后续补充。"}
-              </p>
-              <p className={shared.muted}>
-                本区不展示未核实的业绩数字或荣誉；对外终稿文案与视觉待运营提供。
-              </p>
-            </div>
-          </div>
-        </section>
+            ) : null}
+          </section>
+        ))}
 
         <section className={shared.section} aria-labelledby="featured-activities">
           <div className={shared.sectionHead}>

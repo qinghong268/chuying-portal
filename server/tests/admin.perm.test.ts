@@ -134,6 +134,104 @@ describe("admin content CMS smoke", () => {
     expect(liveAfterPublish.title).toBe("更新标题");
     expect(liveAfterPublish.body).toBe("更新正文");
   });
+
+  it("admin can create, edit, sort, publish, and delete content blocks", async () => {
+    const app = createApp();
+    const admin = await loginAs(app, "admin");
+
+    const createRes = await admin.post("/api/admin/content/blocks").send({
+      block_key: "home_partners",
+      title: "合作伙伴",
+      body: "<p>合作伙伴介绍</p>",
+    });
+    expect(createRes.status).toBe(201);
+    const created = createRes.body.block as {
+      id: number;
+      key: string;
+      status: string;
+      sortOrder: number;
+    };
+    expect(created.key).toBe("home_partners");
+    expect(created.status).toBe("draft");
+    expect(typeof created.sortOrder).toBe("number");
+
+    // duplicate block_key is rejected
+    const dupRes = await admin.post("/api/admin/content/blocks").send({
+      block_key: "home_partners",
+      title: "重复",
+    });
+    expect(dupRes.status).toBe(409);
+
+    // extended fields via PUT
+    const putRes = await admin.put(`/api/admin/content/blocks/${created.id}`).send({
+      coverUrl: "https://example.com/cover.jpg",
+      linkUrl: "https://example.com/page",
+      linkLabel: "查看详情",
+    });
+    expect(putRes.status).toBe(200);
+    expect(putRes.body.block.coverUrl).toBe("https://example.com/cover.jpg");
+    expect(putRes.body.block.linkUrl).toBe("https://example.com/page");
+    expect(putRes.body.block.linkLabel).toBe("查看详情");
+
+    const pubRes = await admin.post(
+      `/api/admin/content/blocks/${created.id}/publish`,
+    );
+    expect(pubRes.status).toBe(200);
+
+    // public home exposes the new fields
+    const homeRes = await request(app).get("/api/content/home");
+    const live = homeRes.body.blocks.find(
+      (b: { key: string }) => b.key === "home_partners",
+    );
+    expect(live).toBeDefined();
+    expect(live.coverUrl).toBe("https://example.com/cover.jpg");
+    expect(live.linkUrl).toBe("https://example.com/page");
+    expect(live.linkLabel).toBe("查看详情");
+
+    // batch sort: renumber to a known sequence, then swap the first two
+    const listRes = await admin.get("/api/admin/content/blocks");
+    const orders = (
+      listRes.body.blocks as { id: number; sortOrder: number }[]
+    ).map((b, i) => ({ id: b.id, sort_order: i }));
+    const firstId = orders[0].id;
+    const secondId = orders[1].id;
+    [orders[0].sort_order, orders[1].sort_order] = [
+      orders[1].sort_order,
+      orders[0].sort_order,
+    ];
+
+    const sortRes = await admin.patch("/api/admin/content/blocks/sort").send({
+      orders,
+    });
+    expect(sortRes.status).toBe(200);
+    expect(sortRes.body.ok).toBe(true);
+
+    const afterSort = await admin.get("/api/admin/content/blocks");
+    const blocks = afterSort.body.blocks as { id: number; sortOrder: number }[];
+    expect(blocks[0].id).toBe(secondId);
+    expect(blocks[1].id).toBe(firstId);
+    expect(blocks[0].sortOrder).toBe(0);
+    expect(blocks[1].sortOrder).toBe(1);
+
+    // delete + 404 on re-delete
+    const delRes = await admin.delete(
+      `/api/admin/content/blocks/${created.id}`,
+    );
+    expect(delRes.status).toBe(200);
+    expect(delRes.body.ok).toBe(true);
+
+    const del404 = await admin.delete(
+      `/api/admin/content/blocks/${created.id}`,
+    );
+    expect(del404.status).toBe(404);
+
+    const finalList = await admin.get("/api/admin/content/blocks");
+    expect(
+      (finalList.body.blocks as { id: number }[]).some(
+        (b) => b.id === created.id,
+      ),
+    ).toBe(false);
+  });
 });
 
 describe("admin join review smoke", () => {

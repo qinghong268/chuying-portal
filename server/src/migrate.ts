@@ -43,10 +43,18 @@ function migrateUserLastLoginColumn(): void {
   addColumnIfMissing("users", "last_login_at", "INTEGER");
 }
 
+function migrateContentBlockExtendedColumns(): void {
+  addColumnIfMissing("content_blocks", "cover_url", "TEXT");
+  addColumnIfMissing("content_blocks", "link_url", "TEXT");
+  addColumnIfMissing("content_blocks", "link_label", "TEXT");
+  addColumnIfMissing("content_blocks", "sort_order", "INTEGER NOT NULL DEFAULT 0");
+}
+
 export function migrate(): void {
   const sql = readFileSync(join(__dirname, "migrate.sql"), "utf8");
   getDb().exec(sql);
   migrateContentBlockDraftColumns();
   migrateActivityDeadlineColumns();
   migrateUserLastLoginColumn();
+  migrateContentBlockExtendedColumns();
 }

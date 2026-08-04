@@ -4,6 +4,9 @@ export interface ContentBlock {
   key: string;
   title: string;
   body: string;
+  coverUrl?: string;
+  linkUrl?: string;
+  linkLabel?: string;
 }
 
 export interface ActivitySummary {
