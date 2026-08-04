@@ -17,6 +17,11 @@ interface JoinApplication {
   rejectReason: string | null;
 }
 
+interface ApprovedAccount {
+  email: string;
+  password: string;
+}
+
 export function JoinDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -25,6 +30,7 @@ export function JoinDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [reason, setReason] = useState("");
   const [acting, setActing] = useState(false);
+  const [account, setAccount] = useState<ApprovedAccount | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -51,11 +57,12 @@ export function JoinDetailPage() {
     setActing(true);
     setError(null);
     try {
-      const res = await api<{ application: JoinApplication }>(
-        `/api/admin/join-applications/${id}/approve`,
-        { method: "POST" },
-      );
+      const res = await api<{
+        application: JoinApplication;
+        account?: ApprovedAccount;
+      }>(`/api/admin/join-applications/${id}/approve`, { method: "POST" });
       setApp(res.application);
+      setAccount(res.account ?? null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "操作失败");
     } finally {
@@ -108,6 +115,25 @@ export function JoinDetailPage() {
       </div>
 
       {error ? <p className={shared.error}>{error}</p> : null}
+
+      {account ? (
+        <div className={`${shared.panel} ${styles.accountBox}`}>
+          <h2 className={shared.sectionTitle}>雏英账号已开通</h2>
+          <div className={shared.formStack}>
+            <div>
+              <strong>登录邮箱</strong>
+              <p>{account.email}</p>
+            </div>
+            <div>
+              <strong>初始密码</strong>
+              <p>{account.password}</p>
+            </div>
+            <p className={shared.muted}>
+              请立即将以上账号信息告知申请人。密码仅在此显示一次，建议引导申请人尽快登录。
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       <div className={shared.panel}>
         <div className={shared.formStack}>

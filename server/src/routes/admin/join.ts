@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { getDb } from "../../connection";
+import { hashPassword } from "../../lib/password";
 import { requireAuth, requireRole } from "../../middleware/auth";
 import { requirePermission } from "../../middleware/requirePermission";
 
@@ -126,7 +127,24 @@ adminJoinRouter.post("/:id/approve", (req, res) => {
     .prepare(`SELECT * FROM join_applications WHERE id = ?`)
     .get(id) as JoinApplicationRow;
 
-  res.json({ application: toPublic(updated) });
+  // PRD 问题四: 审核通过后自动为申请人开通雏英账号
+  const existingUser = getDb()
+    .prepare(`SELECT id FROM users WHERE email = ?`)
+    .get(row.contact) as { id: number } | undefined;
+
+  let account: { email: string; password: string } | undefined;
+  if (!existingUser) {
+    const generatedPassword = Math.random().toString(36).slice(2, 10);
+    getDb()
+      .prepare(
+        `INSERT INTO users (email, password_hash, role, display_name, status, created_at)
+         VALUES (?, ?, 'eagle', ?, 'active', ?)`,
+      )
+      .run(row.contact, hashPassword(generatedPassword), row.name, now);
+    account = { email: row.contact, password: generatedPassword };
+  }
+
+  res.json({ application: toPublic(updated), ...(account ? { account } : {}) });
 });
 
 adminJoinRouter.post("/:id/reject", (req, res) => {

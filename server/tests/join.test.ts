@@ -25,13 +25,13 @@ describe("POST /api/join contact validation", () => {
     expect(res.body.error).toMatch(/mobile|email|Contact/i);
   });
 
-  it("accepts valid mainland mobile with 201", async () => {
+  it("rejects mainland mobile with 400 (email only)", async () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/join")
       .send({ ...validPayload, contact: "13800138000" });
-    expect(res.status).toBe(201);
-    expect(res.body.application.status).toBe("pending");
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/email/i);
   });
 
   it("accepts valid email with 201", async () => {

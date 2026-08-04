@@ -59,7 +59,7 @@ describe("POST /api/join", () => {
     const app = createApp();
     const res = await request(app).post("/api/join").send({
       name: "张三",
-      contact: "13800138000",
+      contact: "zhangsan@example.com",
       message: "希望加入雏英计划，学习成长。",
     });
     expect(res.status).toBe(201);

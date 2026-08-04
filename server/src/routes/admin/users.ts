@@ -1,7 +1,28 @@
 import { Router } from "express";
+import { z } from "zod";
+import { PERMISSION_PACKAGES } from "@chuying/shared";
 import { getDb } from "../../connection";
+import { hashPassword } from "../../lib/password";
 import { requireAuth, requireRole } from "../../middleware/auth";
 import { requirePermission } from "../../middleware/requirePermission";
+
+// 与项目演示账号约定一致（如 admin@demo），不做 TLD 强校验
+const EMAIL = /^[^\s@]+@[^\s@]+$/;
+
+const createUserSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .min(1, "Email is required")
+    .max(200)
+    .refine((v) => EMAIL.test(v), "Email must be a valid email address"),
+  password: z
+    .string()
+    .min(6, "Password must be at least 6 characters")
+    .max(200),
+  displayName: z.string().trim().min(1, "Display name is required").max(100),
+  packages: z.array(z.enum(PERMISSION_PACKAGES)).optional(),
+});
 
 interface UserRow {
   id: number;
@@ -60,6 +81,118 @@ adminUsersRouter.get("/", (req, res) => {
 
   const rows = getDb().prepare(sql).all(...params) as UserRow[];
   res.json({ users: rows.map(toPublic) });
+});
+
+// PRD 问题三: 仅超管可创建管理员账号
+adminUsersRouter.post("/", (req, res) => {
+  if (req.authUser!.role !== "super_admin") {
+    res.status(403).json({ error: "Only super admin can create admin users" });
+    return;
+  }
+
+  const parsed = createUserSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    res
+      .status(400)
+      .json({ error: parsed.error.errors[0]?.message ?? "Invalid request body" });
+    return;
+  }
+
+  const { email, password, displayName, packages = [] } = parsed.data;
+
+  if (packages.includes("permission")) {
+    res
+      .status(400)
+      .json({ error: "Cannot grant permission package to a normal admin" });
+    return;
+  }
+
+  const existing = getDb()
+    .prepare(`SELECT id FROM users WHERE email = ?`)
+    .get(email) as { id: number } | undefined;
+  if (existing) {
+    res.status(409).json({ error: "Email already registered" });
+    return;
+  }
+
+  const now = Date.now();
+  const createUser = getDb().transaction(() => {
+    const result = getDb()
+      .prepare(
+        `INSERT INTO users (email, password_hash, role, display_name, status, created_at)
+         VALUES (?, ?, 'admin', ?, 'active', ?)`,
+      )
+      .run(email, hashPassword(password), displayName, now);
+    const userId = Number(result.lastInsertRowid);
+
+    if (packages.length > 0) {
+      const insertGrant = getDb().prepare(
+        `INSERT INTO admin_grants (user_id, permission_code, granted_at)
+         VALUES (?, ?, ?)`,
+      );
+      for (const code of packages) {
+        insertGrant.run(userId, code, now);
+      }
+    }
+    return userId;
+  });
+
+  const userId = createUser();
+  const user = getDb()
+    .prepare(
+      `SELECT id, email, role, display_name, status, created_at, last_login_at FROM users WHERE id = ?`,
+    )
+    .get(userId) as UserRow;
+
+  res.status(201).json({ user: toPublic(user) });
+});
+
+// PRD 问题三: 仅超管可删除管理员/雏英账号
+adminUsersRouter.delete("/:id", (req, res) => {
+  if (req.authUser!.role !== "super_admin") {
+    res.status(403).json({ error: "Only super admin can delete users" });
+    return;
+  }
+
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id < 1) {
+    res.status(400).json({ error: "Invalid user id" });
+    return;
+  }
+
+  if (req.authUser!.id === id) {
+    res.status(400).json({ error: "Cannot delete yourself" });
+    return;
+  }
+
+  const user = getDb()
+    .prepare(`SELECT id, email, role, status FROM users WHERE id = ?`)
+    .get(id) as
+    | { id: number; email: string; role: UserRow["role"]; status: string }
+    | undefined;
+
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  if (user.role === "super_admin") {
+    const activeSupers = getDb()
+      .prepare(
+        `SELECT COUNT(*) AS c FROM users
+         WHERE role = 'super_admin' AND status = 'active'`,
+      )
+      .get() as { c: number };
+    if (activeSupers.c <= 1) {
+      res.status(400).json({ error: "Cannot delete the last super admin" });
+      return;
+    }
+    res.status(403).json({ error: "Cannot delete a super admin" });
+    return;
+  }
+
+  getDb().prepare(`DELETE FROM users WHERE id = ?`).run(id);
+  res.json({ ok: true });
 });
 
 adminUsersRouter.get("/:id/grants", (req, res) => {

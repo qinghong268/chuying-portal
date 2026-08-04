@@ -131,3 +131,9 @@
   padding: var(--space-xl);
   box-shadow: var(--shadow-card);
 }
+
+.accountBox {
+  margin-top: var(--space-lg);
+  border: 1px solid var(--color-primary);
+  background: rgba(13, 148, 136, 0.06);
+}

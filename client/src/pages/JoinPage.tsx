@@ -10,11 +10,10 @@ interface JoinResult {
   status: string;
 }
 
-const MAINLAND_MOBILE = /^1[3-9]\d{9}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function isValidContact(value: string): boolean {
-  return MAINLAND_MOBILE.test(value) || EMAIL.test(value);
+  return EMAIL.test(value);
 }
 
 export function JoinPage() {
@@ -42,7 +41,7 @@ export function JoinPage() {
       setContactError("请填写联系方式。");
       hasFieldError = true;
     } else if (!isValidContact(trimmedContact)) {
-      setContactError("请输入合法的中国大陆手机号或邮箱。");
+      setContactError("请输入合法的邮箱地址。");
       hasFieldError = true;
     }
 
@@ -142,9 +141,10 @@ export function JoinPage() {
           />
         </div>
         <div className={shared.field}>
-          <label htmlFor="join-contact">联系方式（手机或邮箱）*</label>
+          <label htmlFor="join-contact">联系方式（邮箱）*</label>
           <input
             id="join-contact"
+            type="email"
             value={contact}
             onChange={(e) => {
               setContact(e.target.value);
@@ -152,7 +152,7 @@ export function JoinPage() {
             }}
             required
             maxLength={200}
-            placeholder="例如 13800138000 或 you@example.com"
+            placeholder="例如 you@example.com"
             aria-invalid={contactError ? true : undefined}
             aria-describedby={contactError ? "join-contact-error" : undefined}
           />

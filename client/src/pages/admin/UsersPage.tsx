@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import type { PermissionCode } from "@chuying/shared";
 import { api } from "../../api/client";
 import { useAuth } from "../../auth/AuthContext";
 import { roleLabel } from "../../lib/adminLabels";
@@ -16,6 +17,17 @@ interface AdminUser {
   lastLoginAt: number | null;
 }
 
+// 可授予普通管理员的权限包（不含 permission）
+const ADMIN_PACKAGES: Array<{ code: PermissionCode; name: string }> = [
+  { code: "content", name: "内容运营" },
+  { code: "join_review", name: "加入审核" },
+  { code: "activity", name: "活动管理" },
+  { code: "point_type", name: "积分类型" },
+  { code: "point_review", name: "积分审批" },
+  { code: "user", name: "用户管理" },
+  { code: "dashboard", name: "数据看板" },
+];
+
 export function UsersPage() {
   const { user: me } = useAuth();
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -31,6 +43,15 @@ export function UsersPage() {
     packages: string[];
   } | null>(null);
   const [grantsLoading, setGrantsLoading] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    email: "",
+    password: "",
+    displayName: "",
+  });
+  const [createPackages, setCreatePackages] = useState<PermissionCode[]>([]);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -99,10 +120,89 @@ export function UsersPage() {
     }
   }
 
+  async function createAdmin() {
+    const email = createForm.email.trim();
+    const displayName = createForm.displayName.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+$/.test(email)) {
+      setCreateError("请填写合法的邮箱地址。");
+      return;
+    }
+    if (createForm.password.length < 6) {
+      setCreateError("密码至少 6 位。");
+      return;
+    }
+    if (!displayName) {
+      setCreateError("请填写显示名。");
+      return;
+    }
+
+    setCreating(true);
+    setCreateError(null);
+    try {
+      const res = await api<{ user: AdminUser }>("/api/admin/users", {
+        method: "POST",
+        body: JSON.stringify({
+          email,
+          password: createForm.password,
+          displayName,
+          packages: createPackages,
+        }),
+      });
+      setUsers((prev) =>
+        [...prev, res.user].sort((a, b) => a.id - b.id),
+      );
+      setShowCreate(false);
+      setCreateForm({ email: "", password: "", displayName: "" });
+      setCreatePackages([]);
+    } catch (e) {
+      setCreateError(e instanceof Error ? e.message : "创建失败");
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function removeUser(u: AdminUser) {
+    const ok = window.confirm(
+      `确认删除账号「${u.displayName}」（${u.email}）？\n删除后不可恢复。`,
+    );
+    if (!ok) return;
+
+    setActing(u.id);
+    setError(null);
+    try {
+      await api<{ ok: boolean }>(`/api/admin/users/${u.id}`, {
+        method: "DELETE",
+      });
+      setUsers((prev) => prev.filter((x) => x.id !== u.id));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "操作失败");
+    } finally {
+      setActing(null);
+    }
+  }
+
+  function toggleCreatePackage(code: PermissionCode) {
+    setCreatePackages((prev) =>
+      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code],
+    );
+  }
+
   return (
     <>
       <div className={styles.pageHead}>
         <h1 className={styles.pageHeadTitle}>用户管理</h1>
+        {me?.role === "super_admin" ? (
+          <button
+            type="button"
+            className={shared.btnAccent}
+            onClick={() => {
+              setCreateError(null);
+              setShowCreate(true);
+            }}
+          >
+            添加管理员
+          </button>
+        ) : null}
       </div>
 
       <div className={shared.filters}>
@@ -189,6 +289,18 @@ export function UsersPage() {
                           {grantsFor === u.id ? "收起授权" : "授权摘要"}
                         </button>
                       ) : null}
+                      {me?.role === "super_admin" &&
+                      u.id !== me.id &&
+                      u.role !== "super_admin" ? (
+                        <button
+                          type="button"
+                          className={styles.dangerBtn}
+                          disabled={acting === u.id}
+                          onClick={() => void removeUser(u)}
+                        >
+                          删除
+                        </button>
+                      ) : null}
                     </div>
                   </td>
                 </tr>
@@ -212,6 +324,103 @@ export function UsersPage() {
               ))}
             </ul>
           )}
+        </div>
+      ) : null}
+
+      {showCreate ? (
+        <div
+          className={styles.modalOverlay}
+          onClick={() => setShowCreate(false)}
+        >
+          <div
+            className={styles.modal}
+            role="dialog"
+            aria-modal="true"
+            aria-label="添加管理员"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className={shared.sectionTitle}>添加管理员</h2>
+            <div className={shared.formStack}>
+              <div className={shared.field}>
+                <label htmlFor="new-admin-email">邮箱 *</label>
+                <input
+                  id="new-admin-email"
+                  type="email"
+                  value={createForm.email}
+                  onChange={(e) =>
+                    setCreateForm((f) => ({ ...f, email: e.target.value }))
+                  }
+                  placeholder="例如 admin@example.com"
+                />
+              </div>
+              <div className={shared.field}>
+                <label htmlFor="new-admin-password">密码（至少 6 位）*</label>
+                <input
+                  id="new-admin-password"
+                  type="password"
+                  value={createForm.password}
+                  onChange={(e) =>
+                    setCreateForm((f) => ({ ...f, password: e.target.value }))
+                  }
+                />
+              </div>
+              <div className={shared.field}>
+                <label htmlFor="new-admin-name">显示名 *</label>
+                <input
+                  id="new-admin-name"
+                  value={createForm.displayName}
+                  onChange={(e) =>
+                    setCreateForm((f) => ({ ...f, displayName: e.target.value }))
+                  }
+                  placeholder="例如 王运营"
+                />
+              </div>
+
+              <fieldset>
+                <legend style={{ fontSize: "0.85rem", fontWeight: 600 }}>
+                  权限包
+                </legend>
+                <div className={styles.grantGrid}>
+                  {ADMIN_PACKAGES.map((pkg) => (
+                    <div key={pkg.code} className={styles.grantItem}>
+                      <input
+                        id={`new-admin-pkg-${pkg.code}`}
+                        type="checkbox"
+                        checked={createPackages.includes(pkg.code)}
+                        onChange={() => toggleCreatePackage(pkg.code)}
+                      />
+                      <label htmlFor={`new-admin-pkg-${pkg.code}`}>
+                        <strong>{pkg.name}</strong>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </fieldset>
+
+              {createError ? (
+                <p className={shared.error}>{createError}</p>
+              ) : null}
+
+              <div className={shared.btnRow}>
+                <button
+                  type="button"
+                  className={shared.btnPrimary}
+                  disabled={creating}
+                  onClick={() => void createAdmin()}
+                >
+                  {creating ? "创建中…" : "确认"}
+                </button>
+                <button
+                  type="button"
+                  className={shared.btnSecondary}
+                  disabled={creating}
+                  onClick={() => setShowCreate(false)}
+                >
+                  取消
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       ) : null}
     </>
