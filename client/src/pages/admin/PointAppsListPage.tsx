@@ -78,7 +78,7 @@ export function PointAppsListPage() {
               setParams(next);
             }}
           >
-            <option value="">全部</option>
+            <option value="" disabled>全部</option>
             <option value="pending">待审批</option>
             <option value="approved">已通过</option>
             <option value="rejected">已驳回</option>

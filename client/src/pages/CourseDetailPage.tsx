@@ -17,7 +17,7 @@ export function CourseDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
-  const [progressInput, setProgressInput] = useState(0);
+  const [progressStr, setProgressStr] = useState("");
 
   const load = useCallback(async () => {
     const courseId = Number(id);
@@ -28,7 +28,7 @@ export function CourseDetailPage() {
     try {
       const data = await api<{ course: CourseDetail }>(`/api/courses/${courseId}`);
       setCourse(data.course);
-      setProgressInput(data.course.progressPercent ?? 0);
+      setProgressStr(String(data.course.progressPercent ?? ""));
       setError(null);
     } catch (err) {
       setCourse(null);
@@ -65,12 +65,17 @@ export function CourseDetailPage() {
 
   async function handleProgress() {
     if (!course) return;
+    const percent = progressStr === "" ? undefined : Number(progressStr);
+    if (percent === undefined) {
+      setActionMsg("请输入进度");
+      return;
+    }
     setBusy(true);
     setActionMsg(null);
     try {
       await api(`/api/courses/${course.id}/progress`, {
         method: "PUT",
-        body: JSON.stringify({ percent: progressInput }),
+        body: JSON.stringify({ percent }),
       });
       setActionMsg("进度已更新");
       await load();
@@ -167,8 +172,13 @@ export function CourseDetailPage() {
                 type="number"
                 min={0}
                 max={100}
-                value={progressInput}
-                onChange={(e) => setProgressInput(Number(e.target.value))}
+                value={progressStr}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === "" || (/^\d+$/.test(v) && Number(v) <= 100)) {
+                    setProgressStr(v);
+                  }
+                }}
               />
             </label>
             <button

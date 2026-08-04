@@ -78,7 +78,7 @@ export function CoursesPage() {
         <div className={shared.field}>
           <label htmlFor="course-status">状态</label>
           <select id="course-status" value={status} onChange={(e) => setStatus(e.target.value)}>
-            <option value="">全部</option>
+            <option value="" disabled>全部</option>
             <option value="draft">草稿</option>
             <option value="published">已发布</option>
             <option value="archived">已归档</option>

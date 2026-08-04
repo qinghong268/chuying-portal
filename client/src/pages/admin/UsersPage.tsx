@@ -219,7 +219,7 @@ export function UsersPage() {
         <div className={shared.field}>
           <label htmlFor="user-role">角色</label>
           <select id="user-role" value={role} onChange={(e) => setRole(e.target.value)}>
-            <option value="">全部</option>
+            <option value="" disabled>全部</option>
             <option value="eagle">雏英</option>
             <option value="admin">管理员</option>
             <option value="super_admin">超级管理员</option>
@@ -228,7 +228,7 @@ export function UsersPage() {
         <div className={shared.field}>
           <label htmlFor="user-status">状态</label>
           <select id="user-status" value={status} onChange={(e) => setStatus(e.target.value)}>
-            <option value="">全部</option>
+            <option value="" disabled>全部</option>
             <option value="active">正常</option>
             <option value="disabled">已停用</option>
           </select>

@@ -5,7 +5,7 @@ import { migrate, seed, getDb } from "../src/db";
 
 const reflectionOk = "心得".repeat(150); // 300 chars
 const reflectionShort = "心得".repeat(149); // 298 chars
-const reflectionLong = "心得".repeat(201); // 402 chars
+const reflectionLong = "心得".repeat(501); // 1002 chars
 
 beforeAll(() => {
   process.env.DATABASE_PATH = ":memory:";
@@ -227,7 +227,7 @@ describe("point applications — course type1 (progress ≥ 99)", () => {
 });
 
 describe("point applications — reflection length", () => {
-  it("rejects reflection shorter than 300 or longer than 400", async () => {
+  it("rejects reflection shorter than 300 or longer than 1000", async () => {
     const app = createApp();
     const eagle = await loginAs(app, "eagle");
     const activityId = createEndedOnlineActivity(10);

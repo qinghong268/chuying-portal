@@ -83,7 +83,7 @@ export function ActivitiesListPage() {
         <div className={shared.field}>
           <label htmlFor="act-status">状态</label>
           <select id="act-status" value={status} onChange={(e) => setStatus(e.target.value)}>
-            <option value="">全部</option>
+            <option value="" disabled>全部</option>
             <option value="draft">草稿</option>
             <option value="published">已发布</option>
             <option value="archived">已归档</option>
@@ -92,7 +92,7 @@ export function ActivitiesListPage() {
         <div className={shared.field}>
           <label htmlFor="act-mode">形式</label>
           <select id="act-mode" value={mode} onChange={(e) => setMode(e.target.value)}>
-            <option value="">全部</option>
+            <option value="" disabled>全部</option>
             <option value="online">线上</option>
             <option value="offline">线下</option>
           </select>

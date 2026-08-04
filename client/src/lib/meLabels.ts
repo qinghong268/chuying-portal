@@ -45,8 +45,8 @@ export function mapApiError(message: string): string {
   if (message.includes("outside activity apply window")) {
     return "不在活动申请窗口内（活动结束后 24 小时内可申请）";
   }
-  if (message.includes("Reflection must be 300-400")) {
-    return "心得正文需 300–400 字";
+  if (message.includes("Reflection must be")) {
+    return "心得正文需 300–1000 字";
   }
   if (message.includes("already exists for this activity")) {
     return "该活动已有待审或已通过的心得申请";

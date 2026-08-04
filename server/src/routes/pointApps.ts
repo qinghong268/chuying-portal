@@ -406,7 +406,7 @@ pointAppsRouter.post(
 
     if (body.type === "type1") {
       if (!isReflectionLengthOk(body.reflection)) {
-        res.status(400).json({ error: "Reflection must be 300-400 characters" });
+        res.status(400).json({ error: "Reflection must be 300-1000 characters" });
         return;
       }
 

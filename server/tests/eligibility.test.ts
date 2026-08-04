@@ -128,11 +128,11 @@ describe("isReflectionLengthOk", () => {
     expect(isReflectionLengthOk(char.repeat(300))).toBe(true);
   });
 
-  it("accepts 400 characters", () => {
-    expect(isReflectionLengthOk(char.repeat(400))).toBe(true);
+  it("accepts 1000 characters", () => {
+    expect(isReflectionLengthOk(char.repeat(1000))).toBe(true);
   });
 
-  it("rejects 401 characters", () => {
-    expect(isReflectionLengthOk(char.repeat(401))).toBe(false);
+  it("rejects 1001 characters", () => {
+    expect(isReflectionLengthOk(char.repeat(1001))).toBe(false);
   });
 });

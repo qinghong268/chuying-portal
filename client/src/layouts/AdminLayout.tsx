@@ -34,9 +34,6 @@ export function AdminLayout() {
               </button>
             </>
           )}
-          <NavLink to="/" className={styles.topLink}>
-            回前台
-          </NavLink>
           {user ? (
             <button type="button" className={styles.ghostBtn} onClick={() => void logout()}>
               退出

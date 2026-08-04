@@ -19,7 +19,7 @@ export function ActivityDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [progressInput, setProgressInput] = useState(0);
+  const [progressStr, setProgressStr] = useState("");
 
   const load = useCallback(async () => {
     const activityId = Number(id);
@@ -30,7 +30,7 @@ export function ActivityDetailPage() {
     try {
       const data = await api<{ activity: ActivityDetail }>(`/api/activities/${activityId}`);
       setActivity(data.activity);
-      setProgressInput(data.activity.progressPercent ?? 0);
+      setProgressStr(String(data.activity.progressPercent ?? ""));
       setError(null);
     } catch (err) {
       setActivity(null);
@@ -63,12 +63,17 @@ export function ActivityDetailPage() {
 
   async function handleProgress() {
     if (!activity) return;
+    const percent = progressStr === "" ? undefined : Number(progressStr);
+    if (percent === undefined) {
+      setActionMsg("请输入进度");
+      return;
+    }
     setBusy(true);
     setActionMsg(null);
     try {
       await api(`/api/activities/${activity.id}/progress`, {
         method: "PUT",
-        body: JSON.stringify({ percent: progressInput }),
+        body: JSON.stringify({ percent }),
       });
       setActionMsg("进度已更新");
       await load();
@@ -180,7 +185,7 @@ export function ActivityDetailPage() {
               <li>
                 积分申请：活动结束后 24 小时内、且须在积分申请通道截止前可提交心得
               </li>
-              <li>心得正文 300–400 字（在个人中心发起申请）</li>
+              <li>心得正文 300–1000 字（在个人中心发起申请）</li>
             </ul>
           </section>
         </article>
@@ -222,8 +227,13 @@ export function ActivityDetailPage() {
                   type="number"
                   min={0}
                   max={100}
-                  value={progressInput}
-                  onChange={(e) => setProgressInput(Number(e.target.value))}
+                  value={progressStr}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === "" || (/^\d+$/.test(v) && Number(v) <= 100)) {
+                      setProgressStr(v);
+                    }
+                  }}
                 />
               </label>
               <button

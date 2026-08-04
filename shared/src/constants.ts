@@ -1,7 +1,7 @@
 export const WATCH_PROGRESS_THRESHOLD = 99;
 export const OFFLINE_APPLY_WINDOW_HOURS = 24;
 export const REFLECTION_MIN_LEN = 300;
-export const REFLECTION_MAX_LEN = 400;
+export const REFLECTION_MAX_LEN = 1000;
 
 export const POINT_TEMPLATE_CODES = [
   "contest_award",
