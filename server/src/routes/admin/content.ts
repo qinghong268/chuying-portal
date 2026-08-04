@@ -64,6 +64,12 @@ const createSchema = z.object({
   title: z.string().trim().min(1).max(200),
   summary: z.string().min(0).max(500).optional(),
   body: z.string().min(0).max(20000).optional(),
+  cover_url: z.string().max(2000).optional(),
+  coverUrl: z.string().max(2000).optional(),
+  link_url: z.string().max(2000).optional(),
+  linkUrl: z.string().max(2000).optional(),
+  link_label: z.string().max(100).optional(),
+  linkLabel: z.string().max(100).optional(),
 });
 
 const sortSchema = z.object({
@@ -261,7 +267,10 @@ adminContentRouter.post("/blocks", (req, res) => {
     return;
   }
 
-  const { block_key, title, summary, body } = parsed.data;
+  const { block_key, title, summary, body, cover_url, coverUrl, link_url, linkUrl, link_label, linkLabel } = parsed.data;
+  const cover = cover_url ?? coverUrl ?? null;
+  const link = link_url ?? linkUrl ?? null;
+  const label = link_label ?? linkLabel ?? null;
   const exists = getDb()
     .prepare(`SELECT id FROM content_blocks WHERE block_key = ?`)
     .get(block_key);
@@ -280,10 +289,10 @@ adminContentRouter.post("/blocks", (req, res) => {
   const info = getDb()
     .prepare(
       `INSERT INTO content_blocks
-         (block_key, title, body, draft_title, draft_body, summary, status, sort_order, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, 'draft', ?, ?)`,
+         (block_key, title, body, draft_title, draft_body, summary, cover_url, link_url, link_label, status, sort_order, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?)`,
     )
-    .run(block_key, title, nextBody, title, nextBody, summary?.trim() || null, sortOrder, now);
+    .run(block_key, title, nextBody, title, nextBody, summary?.trim() || null, cover, link, label, sortOrder, now);
 
   const row = getDb()
     .prepare(`SELECT * FROM content_blocks WHERE id = ?`)

@@ -480,8 +480,14 @@ pointAppsRouter.post(
         return;
       }
 
+      const { enrolled: isEnrolled } = getEnrollmentProgress(userId, activity.id);
+      if (!isEnrolled) {
+        res.status(422).json({ error: "not enrolled in this activity" });
+        return;
+      }
+
       const eligibility = canApplyActivityReflection({
-        enrolled: true,
+        enrolled: isEnrolled,
         activityEndAt: activity.end_at,
         pointApplyDeadline: activity.point_apply_deadline,
         now,
