@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import type { PermissionCode } from "@chuying/shared";
 import { api } from "../../api/client";
 import { useAuth } from "../../auth/AuthContext";
@@ -30,8 +31,9 @@ const ADMIN_PACKAGES: Array<{ code: PermissionCode; name: string }> = [
 
 export function UsersPage() {
   const { user: me } = useAuth();
+  const [searchParams] = useSearchParams();
   const [users, setUsers] = useState<AdminUser[]>([]);
-  const [role, setRole] = useState("");
+  const [role, setRole] = useState(() => searchParams.get("role") ?? "");
   const [status, setStatus] = useState("");
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
@@ -75,6 +77,12 @@ export function UsersPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Honor ?role= from navigation (e.g. dashboard card link)
+  useEffect(() => {
+    const r = searchParams.get("role");
+    if (r) setRole(r);
+  }, [searchParams]);
 
   async function loadGrants(userId: number) {
     setGrantsFor(userId);

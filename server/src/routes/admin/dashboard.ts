@@ -65,6 +65,43 @@ adminDashboardRouter.get("/summary", (_req, res) => {
     )
     .get(sevenDaysAgo) as { c: number; points: number };
 
+  // Daily stats for last 7 days
+  const dailyStats: Array<{
+    date: string;
+    enrollments: number;
+    points: number;
+  }> = [];
+  for (let i = 6; i >= 0; i--) {
+    const dayStart = new Date();
+    dayStart.setDate(dayStart.getDate() - i);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1);
+
+    const dayEnrollments = (
+      db
+        .prepare(
+          `SELECT COUNT(*) AS c FROM enrollments WHERE enrolled_at >= ? AND enrolled_at < ?`,
+        )
+        .get(dayStart.getTime(), dayEnd.getTime()) as { c: number }
+    ).c;
+
+    const dayPoints = (
+      db
+        .prepare(
+          `SELECT COALESCE(SUM(CASE WHEN delta > 0 THEN delta ELSE 0 END), 0) AS p
+           FROM point_ledger WHERE created_at >= ? AND created_at < ?`,
+        )
+        .get(dayStart.getTime(), dayEnd.getTime()) as { p: number }
+    ).p;
+
+    dailyStats.push({
+      date: `${dayStart.getMonth() + 1}/${dayStart.getDate()}`,
+      enrollments: dayEnrollments,
+      points: dayPoints,
+    });
+  }
+
   res.json({
     eagleCount,
     pendingJoinCount,
@@ -73,6 +110,7 @@ adminDashboardRouter.get("/summary", (_req, res) => {
     enrollmentsLast7d,
     ledgerCountLast7d: ledgerAgg.c,
     ledgerPointsLast7d: ledgerAgg.points,
+    dailyStats,
     generatedAt: now,
   });
 });
