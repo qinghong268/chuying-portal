@@ -16,6 +16,7 @@ import { adminPointTypesRouter } from "./routes/admin/pointTypes";
 import { adminContentRouter } from "./routes/admin/content";
 import { adminJoinRouter } from "./routes/admin/join";
 import { adminActivitiesRouter } from "./routes/admin/activities";
+import { adminCoursesRouter } from "./routes/admin/courses";
 import { adminUsersRouter } from "./routes/admin/users";
 import {
   adminPermissionPackagesRouter,
@@ -41,6 +42,7 @@ export function createApp() {
   app.use("/api/admin/content", adminContentRouter);
   app.use("/api/admin/join-applications", adminJoinRouter);
   app.use("/api/admin/activities", adminActivitiesRouter);
+  app.use("/api/admin/courses", adminCoursesRouter);
   app.use("/api/admin/users", adminUsersRouter);
   app.use("/api/admin/permission-packages", adminPermissionPackagesRouter);
   app.use("/api/admin/admin-grants", adminGrantsRouter);

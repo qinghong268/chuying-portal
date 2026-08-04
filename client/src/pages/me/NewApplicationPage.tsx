@@ -2,7 +2,12 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import * as chuyingShared from "@chuying/shared";
 import { api, ApiError } from "../../api/client";
-import type { EligibleActivity, PointApplication, PointTemplate } from "../../api/types";
+import type {
+  EligibleActivity,
+  EligibleCourse,
+  PointApplication,
+  PointTemplate,
+} from "../../api/types";
 import { formatDateTime } from "../../lib/datetime";
 import { mapApiError } from "../../lib/meLabels";
 import shared from "../shared.module.css";
@@ -17,6 +22,7 @@ export function NewApplicationPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const preActivityId = params.get("activityId");
+  const preCourseId = params.get("courseId");
   const preType = params.get("type");
   const fromRejectedId = params.get("from");
 
@@ -24,8 +30,10 @@ export function NewApplicationPage() {
     preType === "template" || preType === "type2" ? "type2" : "type1",
   );
   const [eligible, setEligible] = useState<EligibleActivity[]>([]);
+  const [eligibleCourses, setEligibleCourses] = useState<EligibleCourse[]>([]);
   const [templates, setTemplates] = useState<PointTemplate[]>([]);
   const [activityId, setActivityId] = useState("");
+  const [courseId, setCourseId] = useState("");
   const [templateCode, setTemplateCode] = useState("");
   const [reflection, setReflection] = useState("");
   const [title, setTitle] = useState("");
@@ -39,13 +47,17 @@ export function NewApplicationPage() {
     setLoading(true);
     setError(null);
     try {
-      const [eligibleRes, templatesRes] = await Promise.all([
+      const [eligibleRes, coursesRes, templatesRes] = await Promise.all([
         api<{ activities: EligibleActivity[] }>(
           "/api/me/point-applications/eligible-activities",
+        ),
+        api<{ courses: EligibleCourse[] }>(
+          "/api/me/point-applications/eligible-courses",
         ),
         api<{ templates: PointTemplate[] }>("/api/point-type-templates?enabled=true"),
       ]);
       setEligible(eligibleRes.activities);
+      setEligibleCourses(coursesRes.courses);
       setTemplates(templatesRes.templates);
 
       if (preActivityId) {
@@ -59,6 +71,17 @@ export function NewApplicationPage() {
         }
       }
 
+      if (preCourseId) {
+        const id = Number(preCourseId);
+        const found = coursesRes.courses.some((c) => c.id === id);
+        if (found) {
+          setFormType("type1");
+          setCourseId(String(id));
+        } else {
+          setPrefillNote("该课程当前不可申请（需学习进度达到 99%），请从下方列表选择");
+        }
+      }
+
       const preTemplate = params.get("templateCode");
       if (preTemplate && templatesRes.templates.some((t) => t.code === preTemplate)) {
         setTemplateCode(preTemplate);
@@ -69,7 +92,7 @@ export function NewApplicationPage() {
     } finally {
       setLoading(false);
     }
-  }, [preActivityId, params]);
+  }, [preActivityId, preCourseId, params]);
 
   useEffect(() => {
     void loadOptions();
@@ -89,6 +112,7 @@ export function NewApplicationPage() {
         if (app.type === "type1") {
           setFormType("type1");
           if (app.activityId) setActivityId(String(app.activityId));
+          if (app.courseId) setCourseId(String(app.courseId));
           const ref = app.payload.reflection;
           if (typeof ref === "string") setReflection(ref);
         } else {
@@ -113,6 +137,11 @@ export function NewApplicationPage() {
     [eligible, activityId],
   );
 
+  const selectedCourse = useMemo(
+    () => eligibleCourses.find((c) => c.id === Number(courseId)),
+    [eligibleCourses, courseId],
+  );
+
   const selectedTemplate = useMemo(
     () => templates.find((t) => t.code === templateCode),
     [templates, templateCode],
@@ -128,23 +157,27 @@ export function NewApplicationPage() {
     setError(null);
     try {
       if (formType === "type1") {
-        if (!activityId) {
-          setError("请选择关联活动");
+        const hasActivity = Boolean(activityId);
+        const hasCourse = Boolean(courseId);
+        if (hasActivity === hasCourse) {
+          setError("请从活动与课程中选择一项（二选一）");
           return;
         }
         if (!reflectionValid) {
           setError(`心得正文需 ${REFLECTION_MIN}–${REFLECTION_MAX} 字`);
           return;
         }
+        const body: Record<string, unknown> = {
+          type: "type1",
+          reflection,
+        };
+        if (hasActivity) body.activityId = Number(activityId);
+        if (hasCourse) body.courseId = Number(courseId);
         const data = await api<{ application: PointApplication }>(
           "/api/me/point-applications",
           {
             method: "POST",
-            body: JSON.stringify({
-              type: "type1",
-              activityId: Number(activityId),
-              reflection,
-            }),
+            body: JSON.stringify(body),
           },
         );
         navigate(`/me/applications/${data.application.id}`, {
@@ -200,16 +233,16 @@ export function NewApplicationPage() {
           className={`${styles.typeCard} ${formType === "type1" ? styles.typeCardActive : ""}`}
           onClick={() => setFormType("type1")}
         >
-          <strong>类型一：活动完成心得</strong>
-          <span>绑定已报名且满足条件的活动</span>
+          <strong>类型一：活动 / 课程心得</strong>
+          <span>绑定已报名且满足条件的活动，或学习进度 ≥ 99% 的课程</span>
         </button>
         <button
           type="button"
           className={`${styles.typeCard} ${formType === "type2" ? styles.typeCardActive : ""}`}
           onClick={() => setFormType("type2")}
         >
-          <strong>类型二：专项 / 比赛等</strong>
-          <span>选择模板后填写事项与理由</span>
+          <strong>类型二：独立专项申请</strong>
+          <span>不绑定活动或课程，选择模板后填写事项与理由</span>
         </button>
       </div>
 
@@ -220,12 +253,14 @@ export function NewApplicationPage() {
           {formType === "type1" ? (
             <>
               <div className={shared.field}>
-                <label htmlFor="activity-select">关联活动 *</label>
+                <label htmlFor="activity-select">关联活动（可选，与课程二选一）</label>
                 <select
                   id="activity-select"
                   value={activityId}
-                  onChange={(e) => setActivityId(e.target.value)}
-                  required
+                  onChange={(e) => {
+                    setActivityId(e.target.value);
+                    if (e.target.value) setCourseId("");
+                  }}
                 >
                   <option value="">选择已可申请的活动</option>
                   {eligible.map((a) => (
@@ -251,6 +286,39 @@ export function NewApplicationPage() {
                     {formatDateTime(selectedActivity.endAt)}
                   </p>
                   <p>预估积分（只读）：{selectedActivity.targetPoints}</p>
+                </div>
+              ) : null}
+
+              <div className={shared.field}>
+                <label htmlFor="course-select">关联课程（可选，与活动二选一）</label>
+                <select
+                  id="course-select"
+                  value={courseId}
+                  onChange={(e) => {
+                    setCourseId(e.target.value);
+                    if (e.target.value) setActivityId("");
+                  }}
+                >
+                  <option value="">选择学习进度 ≥ 99% 的课程</option>
+                  {eligibleCourses.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.title}（进度 {c.progressPercent}%）
+                    </option>
+                  ))}
+                </select>
+                {eligibleCourses.length === 0 ? (
+                  <p className={shared.muted}>
+                    暂无可申请课程。
+                    <Link to="/courses">浏览课程</Link>
+                    完成学习后（进度 ≥ 99%）即可申请。
+                  </p>
+                ) : null}
+              </div>
+
+              {selectedCourse ? (
+                <div className={styles.readonly}>
+                  <p>课程：{selectedCourse.title}</p>
+                  <p>学习进度（只读）：{selectedCourse.progressPercent}%</p>
                 </div>
               ) : null}
 
@@ -334,7 +402,9 @@ export function NewApplicationPage() {
               className={shared.btnPrimary}
               disabled={
                 busy ||
-                (formType === "type1" && (eligible.length === 0 || !reflectionValid)) ||
+                (formType === "type1" &&
+                  ((eligible.length === 0 && eligibleCourses.length === 0) ||
+                    !reflectionValid)) ||
                 (formType === "type2" && !templateCode)
               }
             >

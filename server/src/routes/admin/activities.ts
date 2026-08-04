@@ -16,6 +16,8 @@ interface ActivityRow {
   target_points: number;
   status: "draft" | "published" | "archived";
   featured: number;
+  video_url: string | null;
+  image_url: string | null;
   created_at: number;
 }
 
@@ -32,6 +34,8 @@ function toPublic(row: ActivityRow) {
     targetPoints: row.target_points,
     status: row.status,
     featured: row.featured === 1,
+    videoUrl: row.video_url ?? undefined,
+    imageUrl: row.image_url ?? undefined,
     createdAt: row.created_at,
   };
 }
@@ -51,6 +55,8 @@ const createSchema = z.object({
   endAt: z.number().int().positive(),
   pointApplyDeadline: z.number().int().positive().nullable().optional(),
   targetPoints: z.number().int().min(0).max(9999).default(0),
+  videoUrl: z.string().trim().max(2000).nullable().optional(),
+  imageUrl: z.string().trim().max(2000).nullable().optional(),
   featured: z.boolean().optional().default(false),
   status: z.enum(["draft", "published", "archived"]).optional(),
 });
@@ -119,8 +125,8 @@ adminActivitiesRouter.post("/", (req, res) => {
     .prepare(
       `INSERT INTO activities
        (title, description, mode, start_at, end_at, enroll_deadline,
-        point_apply_deadline, target_points, status, featured, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        point_apply_deadline, target_points, video_url, image_url, status, featured, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       data.title,
@@ -131,6 +137,8 @@ adminActivitiesRouter.post("/", (req, res) => {
       data.startAt,
       pointApplyDeadline,
       data.targetPoints,
+      data.videoUrl ?? null,
+      data.imageUrl ?? null,
       status,
       data.featured ? 1 : 0,
       now,
@@ -195,6 +203,10 @@ adminActivitiesRouter.put("/:id", (req, res) => {
       ? data.pointApplyDeadline
       : existing.point_apply_deadline;
   const targetPoints = data.targetPoints ?? existing.target_points;
+  const videoUrl =
+    data.videoUrl !== undefined ? data.videoUrl ?? null : existing.video_url;
+  const imageUrl =
+    data.imageUrl !== undefined ? data.imageUrl ?? null : existing.image_url;
   const status = data.status ?? existing.status;
   const featured =
     data.featured === undefined ? existing.featured : data.featured ? 1 : 0;
@@ -214,7 +226,7 @@ adminActivitiesRouter.put("/:id", (req, res) => {
       `UPDATE activities
        SET title = ?, description = ?, mode = ?, start_at = ?, end_at = ?,
            enroll_deadline = ?, point_apply_deadline = ?, target_points = ?,
-           status = ?, featured = ?
+           video_url = ?, image_url = ?, status = ?, featured = ?
        WHERE id = ?`,
     )
     .run(
@@ -226,6 +238,8 @@ adminActivitiesRouter.put("/:id", (req, res) => {
       startAt,
       pointApplyDeadline,
       targetPoints,
+      videoUrl,
+      imageUrl,
       status,
       featured,
       id,

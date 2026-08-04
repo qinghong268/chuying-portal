@@ -2,12 +2,10 @@ import { Router } from "express";
 import { z } from "zod";
 import { getDb } from "../connection";
 import { requireAuth, requireRole } from "../middleware/auth";
-import {
-  OFFLINE_APPLY_WINDOW_HOURS,
-  WATCH_PROGRESS_THRESHOLD,
-} from "@chuying/shared";
+import { OFFLINE_APPLY_WINDOW_HOURS } from "@chuying/shared";
 import {
   canApplyActivityReflection,
+  canApplyCourseReflection,
   isReflectionLengthOk,
 } from "../domain/eligibility";
 
@@ -21,11 +19,18 @@ interface ActivityRow {
   status: string;
 }
 
+interface CourseRow {
+  id: number;
+  title: string;
+  status: string;
+}
+
 interface ApplicationRow {
   id: number;
   user_id: number;
   type: "type1" | "type2";
   activity_id: number | null;
+  course_id: number | null;
   template_code: string | null;
   payload: string;
   status: "pending" | "approved" | "rejected";
@@ -57,6 +62,7 @@ function toPublicApplication(row: ApplicationRow) {
     id: row.id,
     type: row.type,
     activityId: row.activity_id,
+    courseId: row.course_id,
     templateCode: row.template_code,
     payload: parsePayload(row.payload),
     status: row.status,
@@ -93,7 +99,34 @@ function getEnrollmentProgress(
   return { enrolled: true, progressPercent: progress?.percent ?? 0 };
 }
 
-function hasBlockingType1Application(userId: number, activityId: number): boolean {
+function getCourseEnrollmentProgress(
+  userId: number,
+  courseId: number,
+): { enrolled: boolean; progressPercent: number } {
+  const enrollment = getDb()
+    .prepare(
+      `SELECT id FROM course_enrollments
+       WHERE user_id = ? AND course_id = ?`,
+    )
+    .get(userId, courseId) as { id: number } | undefined;
+
+  if (!enrollment) {
+    return { enrolled: false, progressPercent: 0 };
+  }
+
+  const progress = getDb()
+    .prepare(
+      `SELECT percent FROM course_progress WHERE user_id = ? AND course_id = ?`,
+    )
+    .get(userId, courseId) as { percent: number } | undefined;
+
+  return { enrolled: true, progressPercent: progress?.percent ?? 0 };
+}
+
+function hasBlockingType1Application(
+  userId: number,
+  activityId: number,
+): boolean {
   const row = getDb()
     .prepare(
       `SELECT id FROM point_applications
@@ -105,11 +138,32 @@ function hasBlockingType1Application(userId: number, activityId: number): boolea
   return Boolean(row);
 }
 
-const type1Schema = z.object({
-  type: z.literal("type1"),
-  activityId: z.number().int().positive(),
-  reflection: z.string(),
-});
+function hasBlockingType1CourseApplication(
+  userId: number,
+  courseId: number,
+): boolean {
+  const row = getDb()
+    .prepare(
+      `SELECT id FROM point_applications
+       WHERE user_id = ? AND course_id = ? AND type = 'type1'
+         AND status IN ('pending', 'approved')
+       LIMIT 1`,
+    )
+    .get(userId, courseId) as { id: number } | undefined;
+  return Boolean(row);
+}
+
+const type1Schema = z
+  .object({
+    type: z.literal("type1"),
+    activityId: z.number().int().positive().optional(),
+    courseId: z.number().int().positive().optional(),
+    reflection: z.string(),
+  })
+  .refine(
+    (value) => (value.activityId == null) !== (value.courseId == null),
+    { message: "exactly one of activityId or courseId is required" },
+  );
 
 const type2Schema = z.object({
   type: z.literal("type2"),
@@ -155,8 +209,6 @@ pointAppsRouter.get("/enrollments", requireAuth, requireRole("eagle"), (req, res
     const blocked = hasBlockingType1Application(userId, row.activity_id);
     const eligibility = canApplyActivityReflection({
       enrolled: true,
-      mode: row.mode,
-      progressPercent,
       activityEndAt: row.end_at,
       pointApplyDeadline: row.point_apply_deadline,
       now,
@@ -176,8 +228,6 @@ pointAppsRouter.get("/enrollments", requireAuth, requireRole("eagle"), (req, res
       canApplyType1 = false;
       if (eligibility.reason === "point apply channel closed") {
         applyBlockedReason = "积分申请通道已关闭";
-      } else if (row.mode === "online") {
-        applyBlockedReason = `进度需达到 ${WATCH_PROGRESS_THRESHOLD}%`;
       } else if (now < row.end_at) {
         applyBlockedReason = "活动结束后 24 小时内可申请";
       } else {
@@ -189,10 +239,8 @@ pointAppsRouter.get("/enrollments", requireAuth, requireRole("eagle"), (req, res
       row.end_at + OFFLINE_APPLY_WINDOW_HOURS * 60 * 60 * 1000;
     const channelEnd = row.point_apply_deadline ?? hardWindowEnd;
     const windowEnd = Math.min(hardWindowEnd, channelEnd);
-    const offlineWindowRemainingMs =
-      row.mode === "offline" && now >= row.end_at && now <= windowEnd
-        ? windowEnd - now
-        : null;
+    const applyWindowRemainingMs =
+      now >= row.end_at && now <= windowEnd ? windowEnd - now : null;
 
     return {
       id: row.enrollment_id,
@@ -208,7 +256,7 @@ pointAppsRouter.get("/enrollments", requireAuth, requireRole("eagle"), (req, res
       progressPercent: row.mode === "online" ? progressPercent : undefined,
       canApplyType1,
       applyBlockedReason,
-      offlineWindowRemainingMs,
+      applyWindowRemainingMs,
     };
   });
 
@@ -238,14 +286,8 @@ pointAppsRouter.get(
         if (hasBlockingType1Application(userId, activity.id)) {
           return false;
         }
-        const { enrolled, progressPercent } = getEnrollmentProgress(
-          userId,
-          activity.id,
-        );
         const check = canApplyActivityReflection({
-          enrolled,
-          mode: activity.mode,
-          progressPercent,
+          enrolled: true,
           activityEndAt: activity.end_at,
           pointApplyDeadline: activity.point_apply_deadline,
           now,
@@ -261,6 +303,47 @@ pointAppsRouter.get(
       }));
 
     res.json({ activities: eligible });
+  },
+);
+
+pointAppsRouter.get(
+  "/point-applications/eligible-courses",
+  requireAuth,
+  requireRole("eagle"),
+  (req, res) => {
+    const userId = req.authUser!.id;
+
+    const rows = getDb()
+      .prepare(
+        `SELECT c.id, c.title, c.status, cp.percent AS progress_percent
+         FROM courses c
+         INNER JOIN course_enrollments ce ON ce.course_id = c.id AND ce.user_id = ?
+         LEFT JOIN course_progress cp ON cp.course_id = c.id AND cp.user_id = ?
+         WHERE c.status = 'published'`,
+      )
+      .all(userId, userId) as Array<{
+      id: number;
+      title: string;
+      status: string;
+      progress_percent: number | null;
+    }>;
+
+    const eligible = rows
+      .filter(
+        (course) =>
+          !hasBlockingType1CourseApplication(userId, course.id) &&
+          canApplyCourseReflection({
+            enrolled: true,
+            progressPercent: course.progress_percent ?? 0,
+          }).ok,
+      )
+      .map((course) => ({
+        id: course.id,
+        title: course.title,
+        progressPercent: course.progress_percent ?? 0,
+      }));
+
+    res.json({ courses: eligible });
   },
 );
 
@@ -327,6 +410,57 @@ pointAppsRouter.post(
         return;
       }
 
+      const payload = JSON.stringify({ reflection: body.reflection });
+
+      if (body.courseId != null) {
+        const course = getDb()
+          .prepare(
+            `SELECT id, title, status FROM courses WHERE id = ? AND status = 'published'`,
+          )
+          .get(body.courseId) as CourseRow | undefined;
+
+        if (!course) {
+          res.status(404).json({ error: "Course not found" });
+          return;
+        }
+
+        if (hasBlockingType1CourseApplication(userId, course.id)) {
+          res.status(409).json({
+            error: "A pending or approved application already exists for this course",
+          });
+          return;
+        }
+
+        const { enrolled, progressPercent } = getCourseEnrollmentProgress(
+          userId,
+          course.id,
+        );
+        const eligibility = canApplyCourseReflection({
+          enrolled,
+          progressPercent,
+        });
+
+        if (!eligibility.ok) {
+          res.status(422).json({ error: eligibility.reason });
+          return;
+        }
+
+        const result = getDb()
+          .prepare(
+            `INSERT INTO point_applications
+             (user_id, type, activity_id, course_id, template_code, payload, status, points_requested, created_at)
+             VALUES (?, 'type1', NULL, ?, NULL, ?, 'pending', NULL, ?)`,
+          )
+          .run(userId, course.id, payload, now);
+
+        const row = getDb()
+          .prepare(`SELECT * FROM point_applications WHERE id = ?`)
+          .get(Number(result.lastInsertRowid)) as ApplicationRow;
+
+        res.status(201).json({ application: toPublicApplication(row) });
+        return;
+      }
+
       const activity = getDb()
         .prepare(
           `SELECT id, title, mode, end_at, point_apply_deadline, target_points, status
@@ -346,14 +480,8 @@ pointAppsRouter.post(
         return;
       }
 
-      const { enrolled, progressPercent } = getEnrollmentProgress(
-        userId,
-        activity.id,
-      );
       const eligibility = canApplyActivityReflection({
-        enrolled,
-        mode: activity.mode,
-        progressPercent,
+        enrolled: true,
         activityEndAt: activity.end_at,
         pointApplyDeadline: activity.point_apply_deadline,
         now,
@@ -364,12 +492,11 @@ pointAppsRouter.post(
         return;
       }
 
-      const payload = JSON.stringify({ reflection: body.reflection });
       const result = getDb()
         .prepare(
           `INSERT INTO point_applications
-           (user_id, type, activity_id, template_code, payload, status, points_requested, created_at)
-           VALUES (?, 'type1', ?, NULL, ?, 'pending', ?, ?)`,
+           (user_id, type, activity_id, course_id, template_code, payload, status, points_requested, created_at)
+           VALUES (?, 'type1', ?, NULL, NULL, ?, 'pending', ?, ?)`,
         )
         .run(userId, activity.id, payload, activity.target_points, now);
 
@@ -400,8 +527,8 @@ pointAppsRouter.post(
     const result = getDb()
       .prepare(
         `INSERT INTO point_applications
-         (user_id, type, activity_id, template_code, payload, status, points_requested, created_at)
-         VALUES (?, 'type2', NULL, ?, ?, 'pending', ?, ?)`,
+         (user_id, type, activity_id, course_id, template_code, payload, status, points_requested, created_at)
+         VALUES (?, 'type2', NULL, NULL, ?, ?, 'pending', ?, ?)`,
       )
       .run(userId, template.code, payload, template.default_points, now);
 

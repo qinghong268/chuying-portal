@@ -114,20 +114,22 @@ export function runSeed(): void {
 
   const day = 24 * 60 * 60 * 1000;
   const insertActivity = database.prepare(
-    `INSERT INTO activities (title, description, mode, start_at, end_at, enroll_deadline, point_apply_deadline, target_points, status, featured, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'published', 1, ?)`,
+    `INSERT INTO activities (title, description, mode, start_at, end_at, enroll_deadline, point_apply_deadline, target_points, video_url, image_url, status, featured, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'published', 1, ?)`,
   );
   const onlineStart = ts + day;
   const onlineEnd = ts + 3 * day;
   insertActivity.run(
     "线上入门讲座",
-    "面向雏英的线上入门讲座，完成观看后可提交心得申请积分。",
+    "面向雏英的线上入门讲座，活动结束后 24 小时内可提交心得申请积分。",
     "online",
     onlineStart,
     onlineEnd,
     onlineStart,
     onlineEnd + day,
     10,
+    "https://example.com/videos/intro-online-lecture.mp4",
+    null,
     ts,
   );
   const offlineStart = ts + 7 * day;
@@ -141,21 +143,29 @@ export function runSeed(): void {
     offlineStart,
     offlineEnd + day,
     15,
+    null,
+    "https://example.com/images/offline-workshop.jpg",
     ts,
   );
 
   const insertCourse = database.prepare(
-    `INSERT INTO courses (title, description, status, featured, created_at)
-     VALUES (?, ?, 'published', 1, ?)`,
+    `INSERT INTO courses (title, description, video_url, cover_url, status, featured, sort_order, created_at)
+     VALUES (?, ?, ?, ?, 'published', 1, ?, ?)`,
   );
   insertCourse.run(
     "雏英成长第一课",
     "介绍雏英计划的学习路径与基本要求。",
+    "https://example.com/videos/course-01.mp4",
+    "https://example.com/covers/course-01.jpg",
+    0,
     ts,
   );
   insertCourse.run(
     "团队协作基础",
     "协作沟通与项目实践的基础课程。",
+    "https://example.com/videos/course-02.mp4",
+    "https://example.com/covers/course-02.jpg",
+    1,
     ts,
   );
 }

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { api, ApiError } from "../../api/client";
-import type { ActivityDetail, PointApplication, PointTemplate } from "../../api/types";
+import type { ActivityDetail, CourseDetail, PointApplication, PointTemplate } from "../../api/types";
 import { formatDateTime } from "../../lib/datetime";
 import {
   applicationStatusLabel,
@@ -27,6 +27,7 @@ export function ApplicationDetailPage() {
   const location = useLocation();
   const [app, setApp] = useState<PointApplication | null>(null);
   const [activity, setActivity] = useState<ActivityDetail | null>(null);
+  const [course, setCourse] = useState<CourseDetail | null>(null);
   const [templateName, setTemplateName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,6 +58,15 @@ export function ApplicationDetailPage() {
           setActivity(actRes.activity);
         } catch {
           setActivity(null);
+        }
+      } else if (data.application.type === "type1" && data.application.courseId) {
+        try {
+          const courseRes = await api<{ course: CourseDetail }>(
+            `/api/courses/${data.application.courseId}`,
+          );
+          setCourse(courseRes.course);
+        } catch {
+          setCourse(null);
         }
       } else if (data.application.templateCode) {
         const tplRes = await api<{ templates: PointTemplate[] }>(
@@ -149,21 +159,36 @@ export function ApplicationDetailPage() {
         <h3>申请内容</h3>
         {app.type === "type1" ? (
           <>
-            <p>
-              <strong>关联活动：</strong>
-              {activity ? (
-                <Link to={`/activities/${activity.id}`}>{activity.title}</Link>
-              ) : (
-                `活动 #${app.activityId}`
-              )}
-            </p>
-            {activity ? (
-              <p className={shared.muted}>
-                形态：{activity.mode === "online" ? "线上" : "线下"}
-                {activity.mode === "online" && activity.progressPercent != null
-                  ? ` · 提交时进度 ${activity.progressPercent}%`
-                  : null}
-              </p>
+            {app.activityId ? (
+              <>
+                <p>
+                  <strong>关联活动：</strong>
+                  {activity ? (
+                    <Link to={`/activities/${activity.id}`}>{activity.title}</Link>
+                  ) : (
+                    `活动 #${app.activityId}`
+                  )}
+                </p>
+                {activity ? (
+                  <p className={shared.muted}>
+                    形态：{activity.mode === "online" ? "线上" : "线下"}
+                  </p>
+                ) : null}
+              </>
+            ) : app.courseId ? (
+              <>
+                <p>
+                  <strong>关联课程：</strong>
+                  {course ? (
+                    <Link to={`/courses/${course.id}`}>{course.title}</Link>
+                  ) : (
+                    `课程 #${app.courseId}`
+                  )}
+                </p>
+                {course ? (
+                  <p className={shared.muted}>课程为随时可看的视频</p>
+                ) : null}
+              </>
             ) : null}
             <p>
               <strong>申请分值（只读）：</strong>

@@ -67,7 +67,11 @@ export function CoursesPage() {
       <div className={shared.cardGrid}>
         {filtered.map((item) => (
           <Link key={item.id} to={`/courses/${item.id}`} className={shared.card}>
-            <div className={shared.cardMedia} />
+            {item.coverUrl ? (
+              <img className={shared.cardMediaImage} src={item.coverUrl} alt={item.title} />
+            ) : (
+              <div className={shared.cardMedia} />
+            )}
             <div className={shared.cardBody}>
               <h2 className={shared.cardTitle}>{item.title}</h2>
               {item.featured ? <span className={shared.tag}>精选</span> : null}

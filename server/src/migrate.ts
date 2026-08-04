@@ -50,6 +50,21 @@ function migrateContentBlockExtendedColumns(): void {
   addColumnIfMissing("content_blocks", "sort_order", "INTEGER NOT NULL DEFAULT 0");
 }
 
+function migrateActivityMediaColumns(): void {
+  addColumnIfMissing("activities", "video_url", "TEXT");
+  addColumnIfMissing("activities", "image_url", "TEXT");
+}
+
+function migrateCourseExtendedColumns(): void {
+  addColumnIfMissing("courses", "video_url", "TEXT");
+  addColumnIfMissing("courses", "cover_url", "TEXT");
+  addColumnIfMissing("courses", "sort_order", "INTEGER NOT NULL DEFAULT 0");
+}
+
+function migratePointAppCourseId(): void {
+  addColumnIfMissing("point_applications", "course_id", "INTEGER REFERENCES courses(id)");
+}
+
 export function migrate(): void {
   const sql = readFileSync(join(__dirname, "migrate.sql"), "utf8");
   getDb().exec(sql);
@@ -57,4 +72,7 @@ export function migrate(): void {
   migrateActivityDeadlineColumns();
   migrateUserLastLoginColumn();
   migrateContentBlockExtendedColumns();
+  migrateActivityMediaColumns();
+  migrateCourseExtendedColumns();
+  migratePointAppCourseId();
 }

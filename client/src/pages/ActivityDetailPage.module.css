@@ -15,6 +15,27 @@
   border: 1px solid var(--color-border);
 }
 
+.mediaBox {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: var(--space-lg);
+  border: 1px solid var(--color-border);
+  background: #000;
+}
+
+.video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+}
+
+.coverImage {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
 .title {
   margin: var(--space-md) 0 0;
   font-family: var(--font-display);

@@ -25,6 +25,9 @@ import { JoinDetailPage } from "./pages/admin/JoinDetailPage";
 import { ActivitiesListPage } from "./pages/admin/ActivitiesListPage";
 import { ActivityEditPage } from "./pages/admin/ActivityEditPage";
 import { ActivityEnrollmentsPage } from "./pages/admin/ActivityEnrollmentsPage";
+import { CoursesPage as AdminCoursesPage } from "./pages/admin/CoursesPage";
+import { CourseEditPage } from "./pages/admin/CourseEditPage";
+import { CourseEnrollmentsPage } from "./pages/admin/CourseEnrollmentsPage";
 import { PointTypesPage } from "./pages/admin/PointTypesPage";
 import { PointAppsListPage } from "./pages/admin/PointAppsListPage";
 import { PointAppDetailPage } from "./pages/admin/PointAppDetailPage";
@@ -117,6 +120,38 @@ export default function App() {
               element={
                 <RequireAdminPermission permission="activity">
                   <ActivityEnrollmentsPage />
+                </RequireAdminPermission>
+              }
+            />
+            <Route
+              path="courses"
+              element={
+                <RequireAdminPermission permission="activity">
+                  <AdminCoursesPage />
+                </RequireAdminPermission>
+              }
+            />
+            <Route
+              path="courses/new"
+              element={
+                <RequireAdminPermission permission="activity">
+                  <CourseEditPage />
+                </RequireAdminPermission>
+              }
+            />
+            <Route
+              path="courses/:id/edit"
+              element={
+                <RequireAdminPermission permission="activity">
+                  <CourseEditPage />
+                </RequireAdminPermission>
+              }
+            />
+            <Route
+              path="courses/:id/enrollments"
+              element={
+                <RequireAdminPermission permission="activity">
+                  <CourseEnrollmentsPage />
                 </RequireAdminPermission>
               }
             />

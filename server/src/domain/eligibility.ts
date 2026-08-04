@@ -7,10 +7,10 @@ import {
 
 const HOUR_MS = 60 * 60 * 1000;
 
+// 活动（线上与线下同规则）：活动结束后 24 小时窗口内可申请心得积分。
+// 线上活动不再要求观看进度。
 export function canApplyActivityReflection(input: {
   enrolled: boolean;
-  mode: "online" | "offline";
-  progressPercent: number;
   activityEndAt: number;
   pointApplyDeadline?: number | null;
   now: number;
@@ -26,20 +26,28 @@ export function canApplyActivityReflection(input: {
     return { ok: false, reason: "point apply channel closed" };
   }
 
-  if (input.mode === "online") {
-    if (input.progressPercent < WATCH_PROGRESS_THRESHOLD) {
-      return {
-        ok: false,
-        reason: `watch progress must be at least ${WATCH_PROGRESS_THRESHOLD}%`,
-      };
-    }
-    return { ok: true };
+  const windowEnd = input.activityEndAt + OFFLINE_APPLY_WINDOW_HOURS * HOUR_MS;
+  if (input.now < input.activityEndAt || input.now > windowEnd) {
+    return { ok: false, reason: "outside activity apply window" };
   }
 
-  const windowEnd =
-    input.activityEndAt + OFFLINE_APPLY_WINDOW_HOURS * HOUR_MS;
-  if (input.now < input.activityEndAt || input.now > windowEnd) {
-    return { ok: false, reason: "outside offline apply window" };
+  return { ok: true };
+}
+
+// 课程为随时可看的视频：完成学习（进度 ≥ 99%）后可申请心得积分。
+export function canApplyCourseReflection(input: {
+  enrolled: boolean;
+  progressPercent: number;
+}): { ok: true } | { ok: false; reason: string } {
+  if (!input.enrolled) {
+    return { ok: false, reason: "not enrolled in this course" };
+  }
+
+  if (input.progressPercent < WATCH_PROGRESS_THRESHOLD) {
+    return {
+      ok: false,
+      reason: `watch progress must be at least ${WATCH_PROGRESS_THRESHOLD}%`,
+    };
   }
 
   return { ok: true };

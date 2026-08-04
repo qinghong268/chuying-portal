@@ -19,6 +19,8 @@ export interface ActivitySummary {
   enrollDeadline: number;
   pointApplyDeadline: number | null;
   targetPoints: number;
+  videoUrl?: string;
+  imageUrl?: string;
   featured: boolean;
 }
 
@@ -33,7 +35,14 @@ export interface CourseSummary {
   id: number;
   title: string;
   description: string;
+  videoUrl?: string;
+  coverUrl?: string;
   featured: boolean;
+}
+
+export interface CourseDetail extends CourseSummary {
+  enrolled?: boolean;
+  progressPercent?: number;
 }
 
 export type ApplicationStatus = "pending" | "approved" | "rejected";
@@ -43,6 +52,7 @@ export interface PointApplication {
   id: number;
   type: ApplicationType;
   activityId: number | null;
+  courseId: number | null;
   templateCode: string | null;
   payload: Record<string, unknown>;
   status: ApplicationStatus;
@@ -60,6 +70,12 @@ export interface EligibleActivity {
   mode: "online" | "offline";
   targetPoints: number;
   endAt: number;
+}
+
+export interface EligibleCourse {
+  id: number;
+  title: string;
+  progressPercent: number;
 }
 
 export interface PointTemplate {
@@ -83,7 +99,7 @@ export interface MeEnrollment {
   progressPercent?: number;
   canApplyType1: boolean;
   applyBlockedReason?: string;
-  offlineWindowRemainingMs?: number | null;
+  applyWindowRemainingMs?: number | null;
 }
 
 export interface PointLedgerEntry {

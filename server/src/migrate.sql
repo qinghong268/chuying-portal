@@ -117,10 +117,29 @@ CREATE TABLE IF NOT EXISTS point_ledger (
   created_at INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS course_enrollments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+  enrolled_at INTEGER NOT NULL,
+  UNIQUE (user_id, course_id)
+);
+
+CREATE TABLE IF NOT EXISTS course_progress (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+  percent REAL NOT NULL DEFAULT 0 CHECK (percent >= 0 AND percent <= 100),
+  updated_at INTEGER NOT NULL,
+  UNIQUE (user_id, course_id)
+);
+
 CREATE INDEX IF NOT EXISTS idx_admin_grants_user_id ON admin_grants(user_id);
 CREATE INDEX IF NOT EXISTS idx_enrollments_user_id ON enrollments(user_id);
 CREATE INDEX IF NOT EXISTS idx_enrollments_activity_id ON enrollments(activity_id);
 CREATE INDEX IF NOT EXISTS idx_watch_progress_user_activity ON watch_progress(user_id, activity_id);
+CREATE INDEX IF NOT EXISTS idx_course_enrollments_user_id ON course_enrollments(user_id);
+CREATE INDEX IF NOT EXISTS idx_course_progress_user_course ON course_progress(user_id, course_id);
 CREATE INDEX IF NOT EXISTS idx_point_applications_user_id ON point_applications(user_id);
 CREATE INDEX IF NOT EXISTS idx_point_ledger_user_id ON point_ledger(user_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_point_ledger_application_id ON point_ledger(application_id);

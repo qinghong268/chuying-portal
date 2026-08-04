@@ -12,7 +12,7 @@ export function applicationStatusLabel(status: ApplicationStatus): string {
 }
 
 export function applicationTypeLabel(type: ApplicationType, templateCode?: string | null): string {
-  if (type === "type1") return "活动完成心得";
+  if (type === "type1") return "活动/课程完成心得";
   switch (templateCode) {
     case "contest_award":
       return "比赛获奖";
@@ -40,10 +40,10 @@ export function formatHoursRemaining(ms: number): string {
 
 export function mapApiError(message: string): string {
   if (message.includes("watch progress must be at least")) {
-    return "观看进度未达要求，请完成活动后再申请";
+    return "课程学习进度未达要求，请完成课程（进度 ≥ 99%）后再申请";
   }
-  if (message.includes("outside offline apply window")) {
-    return "不在线下活动申请窗口内（活动结束后 24 小时内可申请）";
+  if (message.includes("outside activity apply window")) {
+    return "不在活动申请窗口内（活动结束后 24 小时内可申请）";
   }
   if (message.includes("Reflection must be 300-400")) {
     return "心得正文需 300–400 字";
@@ -51,8 +51,14 @@ export function mapApiError(message: string): string {
   if (message.includes("already exists for this activity")) {
     return "该活动已有待审或已通过的心得申请";
   }
+  if (message.includes("already exists for this course")) {
+    return "该课程已有待审或已通过的心得申请";
+  }
   if (message.includes("Template not available")) {
     return "所选积分模板不可用";
+  }
+  if (message.includes("not enrolled in this course")) {
+    return "未报名该课程";
   }
   if (message.includes("not enrolled")) {
     return "未报名该活动";

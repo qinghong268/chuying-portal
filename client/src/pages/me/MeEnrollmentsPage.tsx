@@ -1,14 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import * as chuyingShared from "@chuying/shared";
 import { api } from "../../api/client";
 import type { MeEnrollment } from "../../api/types";
 import { formatDateRange } from "../../lib/datetime";
 import { formatHoursRemaining } from "../../lib/meLabels";
 import shared from "../shared.module.css";
 import styles from "./me.module.css";
-
-const WATCH_PROGRESS_THRESHOLD = chuyingShared.WATCH_PROGRESS_THRESHOLD ?? 99;
 
 type ModeFilter = "all" | "online" | "offline";
 
@@ -41,11 +38,11 @@ export function MeEnrollmentsPage() {
   }, [items, mode]);
 
   function progressLabel(item: MeEnrollment): string {
+    if (item.applyWindowRemainingMs != null && item.applyWindowRemainingMs > 0) {
+      return `申请窗口剩余 ${formatHoursRemaining(item.applyWindowRemainingMs)}`;
+    }
     if (item.activityMode === "online") {
       return `进度 ${item.progressPercent ?? 0}%`;
-    }
-    if (item.offlineWindowRemainingMs != null && item.offlineWindowRemainingMs > 0) {
-      return `窗口剩余 ${formatHoursRemaining(item.offlineWindowRemainingMs)}`;
     }
     const now = Date.now();
     if (now < item.endAt) return "活动未结束";
@@ -132,10 +129,7 @@ export function MeEnrollmentsPage() {
                       </Link>
                     ) : (
                       <span className={shared.muted}>
-                        {item.applyBlockedReason ??
-                          (item.activityMode === "online"
-                            ? `进度需达到 ${WATCH_PROGRESS_THRESHOLD}%`
-                            : "当前不可申请")}
+                        {item.applyBlockedReason ?? "当前不可申请"}
                       </span>
                     )}
                   </td>

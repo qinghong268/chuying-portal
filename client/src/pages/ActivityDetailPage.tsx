@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import * as chuyingShared from "@chuying/shared";
 import { api, ApiError } from "../api/client";
 import type { ActivityDetail } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
@@ -11,8 +10,6 @@ import {
 } from "../lib/datetime";
 import shared from "./shared.module.css";
 import styles from "./ActivityDetailPage.module.css";
-
-const WATCH_PROGRESS_THRESHOLD = chuyingShared.WATCH_PROGRESS_THRESHOLD ?? 99;
 
 export function ActivityDetailPage() {
   const { id } = useParams();
@@ -105,11 +102,8 @@ export function ActivityDetailPage() {
   const isEagle = user?.role === "eagle";
   const enrolled = Boolean(activity.enrolled);
   const progress = activity.progressPercent ?? 0;
-  const canApplyReflection =
-    isEagle &&
-    enrolled &&
-    ((activity.mode === "online" && progress >= WATCH_PROGRESS_THRESHOLD) ||
-      (activity.mode === "offline" && life === "ended"));
+  // 线上与线下同规则：活动结束后 24 小时内（且在积分申请通道截止前）可申请心得
+  const canApplyReflection = isEagle && enrolled && life === "ended";
 
   return (
     <div className={`${shared.page} ${shared.container}`}>
@@ -119,7 +113,29 @@ export function ActivityDetailPage() {
 
       <div className={styles.layout}>
         <article>
-          <div className={styles.cover} aria-hidden="true" />
+          {activity.mode === "online" && activity.videoUrl ? (
+            <div className={styles.mediaBox}>
+              <video
+                className={styles.video}
+                controls
+                preload="metadata"
+                src={activity.videoUrl}
+              >
+                你的浏览器不支持视频播放，请更换浏览器或
+                <a href={activity.videoUrl}>下载观看</a>。
+              </video>
+            </div>
+          ) : activity.mode === "offline" && activity.imageUrl ? (
+            <div className={styles.mediaBox}>
+              <img
+                className={styles.coverImage}
+                src={activity.imageUrl}
+                alt={activity.title}
+              />
+            </div>
+          ) : (
+            <div className={styles.cover} aria-hidden="true" />
+          )}
           <div className={styles.metaRow}>
             <span
               className={`${shared.tag} ${
@@ -160,9 +176,9 @@ export function ActivityDetailPage() {
           <section className={styles.prose}>
             <h2>报名与积分规则摘要</h2>
             <ul>
-              <li>线上：活动开始前可报名；观看进度 ≥ {WATCH_PROGRESS_THRESHOLD}% 可申请心得</li>
+              <li>线上与线下：活动开始前可报名</li>
               <li>
-                线下：活动开始前可报；结束后 24 小时内且须在积分申请通道截止前可申请心得
+                积分申请：活动结束后 24 小时内、且须在积分申请通道截止前可提交心得
               </li>
               <li>心得正文 300–400 字（在个人中心发起申请）</li>
             </ul>
@@ -259,11 +275,9 @@ export function ActivityDetailPage() {
               </Link>
             ) : isEagle && enrolled ? (
               <p className={shared.muted}>
-                {activity.mode === "online"
-                  ? `观看进度达到 ${WATCH_PROGRESS_THRESHOLD}% 后可申请心得`
-                  : activity.pointApplyDeadline != null
-                    ? `活动结束后 24 小时内且须在 ${formatDateTime(activity.pointApplyDeadline)} 前可申请心得`
-                    : "活动结束后 24 小时内可申请心得"}
+                {activity.pointApplyDeadline != null
+                  ? `活动结束后 24 小时内且须在 ${formatDateTime(activity.pointApplyDeadline)} 前可申请心得`
+                  : "活动结束后 24 小时内可申请心得"}
               </p>
             ) : null}
           </div>

@@ -13,6 +13,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { to: "/admin/content", label: "内容运营", permission: "content" },
   { to: "/admin/join", label: "加入审核", permission: "join_review" },
   { to: "/admin/activities", label: "活动管理", permission: "activity" },
+  { to: "/admin/courses", label: "课程管理", permission: "activity" },
   { to: "/admin/point-types", label: "积分类型", permission: "point_type" },
   { to: "/admin/point-apps", label: "积分审批", permission: "point_review" },
   { to: "/admin/users", label: "用户管理", permission: "user" },

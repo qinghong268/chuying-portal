@@ -16,6 +16,7 @@ interface AdminPointApplication {
   userId: number;
   type: ApplicationType;
   activityId: number | null;
+  courseId: number | null;
   templateCode: string | null;
   payload: Record<string, unknown>;
   status: ApplicationStatus;
@@ -30,6 +31,7 @@ export function PointAppDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [app, setApp] = useState<AdminPointApplication | null>(null);
+  const [courseTitle, setCourseTitle] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pointsGranted, setPointsGranted] = useState("");
@@ -46,6 +48,16 @@ export function PointAppDetailPage() {
       );
       setApp(res.application);
       setPointsGranted(String(res.application.pointsRequested ?? ""));
+      if (res.application.courseId) {
+        try {
+          const courseRes = await api<{ course: { title: string } }>(
+            `/api/courses/${res.application.courseId}`,
+          );
+          setCourseTitle(courseRes.course.title);
+        } catch {
+          setCourseTitle(null);
+        }
+      }
     } catch {
       setError("申请不存在或加载失败");
     } finally {
@@ -142,8 +154,16 @@ export function PointAppDetailPage() {
           ) : null}
           {app.activityId ? (
             <div>
-              <strong>活动 ID</strong>
-              <p>{app.activityId}</p>
+              <strong>关联活动</strong>
+              <p>活动 #{app.activityId}</p>
+            </div>
+          ) : null}
+          {app.courseId ? (
+            <div>
+              <strong>关联课程</strong>
+              <p>
+                {courseTitle ? `${courseTitle}（课程 #${app.courseId}）` : `课程 #${app.courseId}`}
+              </p>
             </div>
           ) : null}
           {reflection ? (

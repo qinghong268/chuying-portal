@@ -26,6 +26,30 @@ async function loginAs(
   return agent;
 }
 
+/** Online activity already ended (within the 24h apply window) but still enrollable
+ *  (start_at in the future) so the enroll endpoint accepts it. */
+function createEndedOnlineActivity(targetPoints = 15): number {
+  const now = Date.now();
+  const hour = 60 * 60 * 1000;
+  const day = 24 * hour;
+  const insert = getDb()
+    .prepare(
+      `INSERT INTO activities (title, description, mode, start_at, end_at, enroll_deadline, point_apply_deadline, target_points, status, featured, created_at)
+       VALUES (?, ?, 'online', ?, ?, ?, ?, ?, 'published', 0, ?)`,
+    )
+    .run(
+      "已结束线上活动",
+      "desc",
+      now + hour,
+      now - hour,
+      now + hour,
+      now + 2 * day,
+      targetPoints,
+      now,
+    );
+  return Number(insert.lastInsertRowid);
+}
+
 describe("smoke #1 — home CMS structure + featured", () => {
   it("home blocks include plan/company keys; featured endpoints respond", async () => {
     const app = createApp();
@@ -57,23 +81,14 @@ describe("smoke #2 — demo eagle login path", () => {
   });
 });
 
-describe("smoke #3–4 — enroll online, progress 99, apply, admin approve, ledger", () => {
+describe("smoke #3–4 — enroll ended activity, apply, admin approve, ledger", () => {
   it("full type1 flow credits balance and ledger", async () => {
     const app = createApp();
     const eagle = await loginAs(app, "eagle");
-    const activityId = (
-      getDb()
-        .prepare(
-          `SELECT id FROM activities WHERE mode = 'online' AND status = 'published' LIMIT 1`,
-        )
-        .get() as { id: number }
-    ).id;
+    const activityId = createEndedOnlineActivity(15);
 
     const enroll = await eagle.post(`/api/activities/${activityId}/enroll`);
     expect([201, 409]).toContain(enroll.status);
-    await eagle
-      .put(`/api/activities/${activityId}/progress`)
-      .send({ percent: 99 });
 
     const enrollments = await eagle.get("/api/me/enrollments");
     expect(enrollments.status).toBe(200);

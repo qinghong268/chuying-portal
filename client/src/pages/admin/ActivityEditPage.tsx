@@ -19,6 +19,8 @@ interface AdminActivity {
   targetPoints: number;
   status: "draft" | "published" | "archived";
   featured: boolean;
+  videoUrl?: string;
+  imageUrl?: string;
 }
 
 const defaultForm = () => {
@@ -32,6 +34,8 @@ const defaultForm = () => {
     endAt: tsToDatetimeLocal(now + 3 * day),
     pointApplyDeadline: tsToDatetimeLocal(now + 4 * day),
     targetPoints: 10,
+    videoUrl: "",
+    imageUrl: "",
     featured: false,
   };
 };
@@ -61,6 +65,8 @@ export function ActivityEditPage() {
           ? tsToDatetimeLocal(a.pointApplyDeadline)
           : "",
         targetPoints: a.targetPoints,
+        videoUrl: a.videoUrl ?? "",
+        imageUrl: a.imageUrl ?? "",
         featured: a.featured,
       });
     } catch {
@@ -90,6 +96,11 @@ export function ActivityEditPage() {
       targetPoints: form.targetPoints,
       featured: form.featured,
     };
+    if (form.mode === "online") {
+      payload.videoUrl = form.videoUrl.trim() || null;
+    } else {
+      payload.imageUrl = form.imageUrl.trim() || null;
+    }
     if (publish) {
       payload.status = "published";
     } else if (isNew) {
@@ -161,6 +172,33 @@ export function ActivityEditPage() {
               <option value="offline">线下</option>
             </select>
           </div>
+          {form.mode === "online" ? (
+            <div className={shared.field}>
+              <label htmlFor="act-video-url">视频链接（线上）</label>
+              <input
+                id="act-video-url"
+                type="url"
+                value={form.videoUrl}
+                onChange={(e) => setForm({ ...form, videoUrl: e.target.value })}
+                placeholder="https://example.com/video.mp4"
+                maxLength={2000}
+              />
+              <p className={shared.muted}>线上活动的直播/录播视频地址，留空则前台显示占位。</p>
+            </div>
+          ) : (
+            <div className={shared.field}>
+              <label htmlFor="act-image-url">现场图片链接（线下）</label>
+              <input
+                id="act-image-url"
+                type="url"
+                value={form.imageUrl}
+                onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+                placeholder="https://example.com/photo.jpg"
+                maxLength={2000}
+              />
+              <p className={shared.muted}>线下活动封面/现场照片地址，留空则前台显示占位。</p>
+            </div>
+          )}
           <div className={shared.field}>
             <label htmlFor="act-start">开始时间</label>
             <input

@@ -15,6 +15,8 @@ interface ActivityRow {
   target_points: number;
   status: string;
   featured: number;
+  video_url: string | null;
+  image_url: string | null;
   created_at: number;
 }
 
@@ -29,6 +31,8 @@ function toActivitySummary(row: ActivityRow) {
     enrollDeadline: row.enroll_deadline,
     pointApplyDeadline: row.point_apply_deadline,
     targetPoints: row.target_points,
+    videoUrl: row.video_url ?? undefined,
+    imageUrl: row.image_url ?? undefined,
     featured: row.featured === 1,
   };
 }
@@ -37,7 +41,7 @@ function findPublishedActivity(id: number): ActivityRow | undefined {
   return getDb()
     .prepare(
       `SELECT id, title, description, mode, start_at, end_at, enroll_deadline,
-              point_apply_deadline, target_points, status, featured, created_at
+              point_apply_deadline, target_points, video_url, image_url, status, featured, created_at
        FROM activities
        WHERE id = ? AND status = 'published'`,
     )
@@ -68,7 +72,7 @@ activitiesRouter.get("/", (_req, res) => {
   const rows = getDb()
     .prepare(
       `SELECT id, title, description, mode, start_at, end_at, enroll_deadline,
-              point_apply_deadline, target_points, status, featured, created_at
+              point_apply_deadline, target_points, video_url, image_url, status, featured, created_at
        FROM activities
        WHERE status = 'published'
        ORDER BY start_at ASC`,
@@ -89,7 +93,7 @@ activitiesRouter.get("/featured", (req, res) => {
   const rows = getDb()
     .prepare(
       `SELECT id, title, description, mode, start_at, end_at, enroll_deadline,
-              point_apply_deadline, target_points, status, featured, created_at
+              point_apply_deadline, target_points, video_url, image_url, status, featured, created_at
        FROM activities
        WHERE status = 'published' AND featured = 1
        ORDER BY start_at ASC
