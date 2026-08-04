@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { ApiError, api } from "../../api/client";
+import { ImageUpload } from "../../components/ImageUpload";
 import { contentStatusLabel } from "../../lib/adminLabels";
 import { formatDateTime } from "../../lib/datetime";
 import shared from "../shared.module.css";
@@ -9,6 +10,7 @@ interface ContentBlock {
   id: number;
   key: string;
   title: string;
+  summary?: string;
   body: string;
   status: "draft" | "published";
   updatedAt: number;
@@ -22,6 +24,7 @@ export function ContentPage() {
   const [blocks, setBlocks] = useState<ContentBlock[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [title, setTitle] = useState("");
+  const [summary, setSummary] = useState("");
   const [body, setBody] = useState("");
   const [coverUrl, setCoverUrl] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
@@ -61,12 +64,34 @@ export function ContentPage() {
   useEffect(() => {
     if (selected) {
       setTitle(selected.title);
+      setSummary(selected.summary ?? "");
       setBody(selected.body);
       setCoverUrl(selected.coverUrl ?? "");
       setLinkUrl(selected.linkUrl ?? "");
       setLinkLabel(selected.linkLabel ?? "");
     }
   }, [selected?.id]);
+
+  // Wrap the selected text in the body textarea with the given HTML tag, or
+  // insert a raw tag at the cursor when there is no selection (e.g. <img>).
+  function insertTag(tag: string, raw = false) {
+    const ta = document.getElementById("block-body") as HTMLTextAreaElement | null;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const selected = body.substring(start, end);
+    const replacement = raw
+      ? `<${tag}>`
+      : selected
+        ? `<${tag}>${selected}</${tag}>`
+        : `<${tag}></${tag}>`;
+    const next = body.substring(0, start) + replacement + body.substring(end);
+    setBody(next);
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.setSelectionRange(start + replacement.length, start + replacement.length);
+    });
+  }
 
   async function saveDraft() {
     if (!selectedId) return;
@@ -78,7 +103,7 @@ export function ContentPage() {
         `/api/admin/content/blocks/${selectedId}`,
         {
           method: "PUT",
-          body: JSON.stringify({ title, body, coverUrl, linkUrl, linkLabel }),
+          body: JSON.stringify({ title, summary, body, coverUrl, linkUrl, linkLabel }),
         },
       );
       setBlocks((prev) => prev.map((b) => (b.id === res.block.id ? res.block : b)));
@@ -98,7 +123,7 @@ export function ContentPage() {
     try {
       await api(`/api/admin/content/blocks/${selectedId}`, {
         method: "PUT",
-        body: JSON.stringify({ title, body, coverUrl, linkUrl, linkLabel }),
+        body: JSON.stringify({ title, summary, body, coverUrl, linkUrl, linkLabel }),
       });
       const res = await api<{ block: ContentBlock }>(
         `/api/admin/content/blocks/${selectedId}/publish`,
@@ -150,6 +175,7 @@ export function ContentPage() {
       if (selectedId === block.id) {
         setSelectedId(null);
         setTitle("");
+        setSummary("");
         setBody("");
         setCoverUrl("");
         setLinkUrl("");
@@ -293,7 +319,46 @@ export function ContentPage() {
                     />
                   </div>
                   <div className={shared.field}>
-                    <label htmlFor="block-body">正文</label>
+                    <label htmlFor="block-summary">简介（首页卡片展示）</label>
+                    <textarea
+                      id="block-summary"
+                      value={summary}
+                      onChange={(e) => setSummary(e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+                  <div className={styles.editorToolbar} role="toolbar" aria-label="正文编辑工具">
+                    <button
+                      type="button"
+                      onClick={() => insertTag("strong")}
+                      title="加粗所选文字"
+                    >
+                      加粗
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertTag("p")}
+                      title="包裹为段落"
+                    >
+                      段落
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertTag("img src=\"\" alt=\"\"", true)}
+                      title="插入图片标签（src 填入上传的图片地址）"
+                    >
+                      图片
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertTag("a href=\"\"")}
+                      title="为所选文字添加链接"
+                    >
+                      链接
+                    </button>
+                  </div>
+                  <div className={shared.field}>
+                    <label htmlFor="block-body">正文（HTML）</label>
                     <textarea
                       id="block-body"
                       value={body}
@@ -302,12 +367,10 @@ export function ContentPage() {
                     />
                   </div>
                   <div className={shared.field}>
-                    <label htmlFor="block-cover">封面图 URL</label>
-                    <input
-                      id="block-cover"
-                      value={coverUrl}
-                      onChange={(e) => setCoverUrl(e.target.value)}
-                      placeholder="https://example.com/cover.jpg"
+                    <label>首页图片（上传）</label>
+                    <ImageUpload
+                      currentUrl={coverUrl}
+                      onUploaded={(url) => setCoverUrl(url)}
                     />
                   </div>
                   <div className={shared.field}>

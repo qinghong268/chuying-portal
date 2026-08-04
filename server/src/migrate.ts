@@ -65,6 +65,10 @@ function migratePointAppCourseId(): void {
   addColumnIfMissing("point_applications", "course_id", "INTEGER REFERENCES courses(id)");
 }
 
+function migrateContentBlockSummaryColumn(): void {
+  addColumnIfMissing("content_blocks", "summary", "TEXT");
+}
+
 export function migrate(): void {
   const sql = readFileSync(join(__dirname, "migrate.sql"), "utf8");
   getDb().exec(sql);
@@ -75,4 +79,5 @@ export function migrate(): void {
   migrateActivityMediaColumns();
   migrateCourseExtendedColumns();
   migratePointAppCourseId();
+  migrateContentBlockSummaryColumn();
 }

@@ -103,43 +103,35 @@ export function HomePage() {
       <div className={shared.container}>
         {error ? <p className={shared.error}>{error}</p> : null}
 
-        {contentBlocks.map((block) => (
-          <section
-            key={block.key}
-            id={block.key}
-            className={shared.section}
-            aria-labelledby={`block-${block.key}`}
-          >
-            <h2 id={`block-${block.key}`} className={shared.sectionTitle}>
-              {block.title}
-            </h2>
-            {block.coverUrl ? (
-              <img
-                src={block.coverUrl}
-                alt={block.title}
-                className={styles.blockCover}
-              />
-            ) : null}
-            {block.body ? (
-              <div
-                className={styles.blockBody}
-                dangerouslySetInnerHTML={{ __html: block.body }}
-              />
-            ) : null}
-            {block.linkUrl ? (
-              <div className={shared.btnRow}>
-                <a
-                  href={block.linkUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={shared.btnPrimary}
-                >
-                  {block.linkLabel || "了解更多"}
-                </a>
-              </div>
-            ) : null}
-          </section>
-        ))}
+        {contentBlocks.length > 0 ? (
+          <div className={shared.cardGrid}>
+            {contentBlocks.map((block) => (
+              <Link
+                key={block.key}
+                to={`/content/${block.key}`}
+                target="_blank"
+                className={shared.card}
+              >
+                {block.coverUrl ? (
+                  <img
+                    src={block.coverUrl}
+                    alt={block.title}
+                    className={shared.cardMediaImage}
+                  />
+                ) : (
+                  <div className={shared.cardMedia} />
+                )}
+                <div className={shared.cardBody}>
+                  <h3 className={shared.cardTitle}>{block.title}</h3>
+                  {block.summary ? (
+                    <p className={shared.cardDesc}>{block.summary}</p>
+                  ) : null}
+                  <span className={shared.btnGhost}>查看详情</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : null}
 
         <section className={shared.section} aria-labelledby="featured-activities">
           <div className={shared.sectionHead}>

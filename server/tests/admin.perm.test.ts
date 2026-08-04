@@ -164,11 +164,13 @@ describe("admin content CMS smoke", () => {
 
     // extended fields via PUT
     const putRes = await admin.put(`/api/admin/content/blocks/${created.id}`).send({
+      summary: "一句话简介",
       coverUrl: "https://example.com/cover.jpg",
       linkUrl: "https://example.com/page",
       linkLabel: "查看详情",
     });
     expect(putRes.status).toBe(200);
+    expect(putRes.body.block.summary).toBe("一句话简介");
     expect(putRes.body.block.coverUrl).toBe("https://example.com/cover.jpg");
     expect(putRes.body.block.linkUrl).toBe("https://example.com/page");
     expect(putRes.body.block.linkLabel).toBe("查看详情");
@@ -184,6 +186,7 @@ describe("admin content CMS smoke", () => {
       (b: { key: string }) => b.key === "home_partners",
     );
     expect(live).toBeDefined();
+    expect(live.summary).toBe("一句话简介");
     expect(live.coverUrl).toBe("https://example.com/cover.jpg");
     expect(live.linkUrl).toBe("https://example.com/page");
     expect(live.linkLabel).toBe("查看详情");

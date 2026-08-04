@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
 import { createApp } from "../src/app";
-import { migrate, seed } from "../src/db";
+import { migrate, seed, getDb } from "../src/db";
 
 beforeAll(() => {
   process.env.DATABASE_PATH = ":memory:";
@@ -19,6 +19,69 @@ describe("GET /api/content/home", () => {
     expect(res.body.blocks.some((b: { key: string }) => b.key === "home_hero")).toBe(
       true,
     );
+  });
+});
+
+describe("GET /api/content/:key", () => {
+  it("returns a single published block with rich fields", async () => {
+    getDb()
+      .prepare(
+        `INSERT INTO content_blocks
+           (block_key, title, body, draft_title, draft_body, summary,
+            cover_url, link_url, link_label, status, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'published', ?)`,
+      )
+      .run(
+        "home_rich_test",
+        "测试详情页",
+        "<h2>章节</h2><p>正文内容</p>",
+        "测试详情页",
+        "<h2>章节</h2><p>正文内容</p>",
+        "一句话简介",
+        "/uploads/test-cover.jpg",
+        "https://example.com/detail",
+        "了解更多",
+        Date.now(),
+      );
+
+    const app = createApp();
+    const res = await request(app).get("/api/content/home_rich_test");
+    expect(res.status).toBe(200);
+    expect(res.body.block).toMatchObject({
+      key: "home_rich_test",
+      title: "测试详情页",
+      summary: "一句话简介",
+      coverUrl: "/uploads/test-cover.jpg",
+      linkUrl: "https://example.com/detail",
+      linkLabel: "了解更多",
+    });
+    expect(res.body.block.body).toContain("<h2>章节</h2>");
+
+    // the block is also exposed through the home list with summary
+    const home = await request(app).get("/api/content/home");
+    const live = home.body.blocks.find(
+      (b: { key: string }) => b.key === "home_rich_test",
+    );
+    expect(live).toBeDefined();
+    expect(live.summary).toBe("一句话简介");
+    expect(live.coverUrl).toBe("/uploads/test-cover.jpg");
+  });
+
+  it("returns 404 for unknown or unpublished blocks", async () => {
+    getDb()
+      .prepare(
+        `INSERT INTO content_blocks
+           (block_key, title, body, draft_title, draft_body, status, updated_at)
+         VALUES (?, ?, ?, ?, ?, 'draft', ?)`,
+      )
+      .run("home_draft_only", "草稿", "", "草稿", "", Date.now());
+
+    const app = createApp();
+    const missing = await request(app).get("/api/content/does_not_exist");
+    expect(missing.status).toBe(404);
+
+    const draft = await request(app).get("/api/content/home_draft_only");
+    expect(draft.status).toBe(404);
   });
 });
 

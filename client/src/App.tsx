@@ -5,6 +5,7 @@ import { PortalLayout } from "./layouts/PortalLayout";
 import { MeLayout } from "./layouts/MeLayout";
 import { AdminLayout } from "./layouts/AdminLayout";
 import { HomePage } from "./pages/HomePage";
+import { ContentDetailPage } from "./pages/ContentDetailPage";
 import { AboutPage } from "./pages/AboutPage";
 import { ActivitiesPage } from "./pages/ActivitiesPage";
 import { ActivityDetailPage } from "./pages/ActivityDetailPage";
@@ -42,6 +43,7 @@ export default function App() {
         <Routes>
           <Route element={<PortalLayout />}>
             <Route index element={<HomePage />} />
+            <Route path="content/:key" element={<ContentDetailPage />} />
             <Route path="about" element={<AboutPage />} />
             <Route path="activities" element={<ActivitiesPage />} />
             <Route path="activities/:id" element={<ActivityDetailPage />} />

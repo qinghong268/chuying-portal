@@ -13,6 +13,7 @@ interface ContentBlockRow {
   draft_body: string | null;
   status: "draft" | "published";
   updated_at: number;
+  summary: string | null;
   cover_url: string | null;
   link_url: string | null;
   link_label: string | null;
@@ -35,6 +36,7 @@ function toAdminBlock(row: ContentBlockRow) {
     body: draftBody(row),
     status: row.status,
     updatedAt: row.updated_at,
+    summary: row.summary ?? undefined,
     coverUrl: row.cover_url ?? undefined,
     linkUrl: row.link_url ?? undefined,
     linkLabel: row.link_label ?? undefined,
@@ -44,6 +46,7 @@ function toAdminBlock(row: ContentBlockRow) {
 
 const putSchema = z.object({
   title: z.string().trim().min(1).max(200).optional(),
+  summary: z.string().min(0).max(500).optional(),
   body: z.string().min(0).max(20000).optional(),
   status: z.enum(["draft", "published"]).optional(),
   cover_url: z.string().max(2000).optional(),
@@ -59,6 +62,7 @@ const putSchema = z.object({
 const createSchema = z.object({
   block_key: z.string().trim().min(1).max(100),
   title: z.string().trim().min(1).max(200),
+  summary: z.string().min(0).max(500).optional(),
   body: z.string().min(0).max(20000).optional(),
 });
 
@@ -143,6 +147,10 @@ adminContentRouter.put("/blocks/:id", (req, res) => {
     parsed.data.title !== undefined ? parsed.data.title : draftTitle(existing);
   const nextDraftBody =
     parsed.data.body !== undefined ? parsed.data.body : draftBody(existing);
+  const nextSummary =
+    parsed.data.summary !== undefined
+      ? parsed.data.summary.trim() || null
+      : existing.summary;
   // A02: PUT never demotes published→draft and never promotes (only POST .../publish).
   let status = existing.status;
   if (
@@ -180,7 +188,7 @@ adminContentRouter.put("/blocks/:id", (req, res) => {
     .prepare(
       `UPDATE content_blocks
        SET draft_title = ?, draft_body = ?, status = ?, updated_at = ?,
-           cover_url = ?, link_url = ?, link_label = ?, sort_order = ?
+           summary = ?, cover_url = ?, link_url = ?, link_label = ?, sort_order = ?
        WHERE id = ?`,
     )
     .run(
@@ -188,6 +196,7 @@ adminContentRouter.put("/blocks/:id", (req, res) => {
       nextDraftBody,
       status,
       updatedAt,
+      nextSummary,
       nextCoverUrl,
       nextLinkUrl,
       nextLinkLabel,
@@ -252,7 +261,7 @@ adminContentRouter.post("/blocks", (req, res) => {
     return;
   }
 
-  const { block_key, title, body } = parsed.data;
+  const { block_key, title, summary, body } = parsed.data;
   const exists = getDb()
     .prepare(`SELECT id FROM content_blocks WHERE block_key = ?`)
     .get(block_key);
@@ -271,10 +280,10 @@ adminContentRouter.post("/blocks", (req, res) => {
   const info = getDb()
     .prepare(
       `INSERT INTO content_blocks
-         (block_key, title, body, draft_title, draft_body, status, sort_order, updated_at)
-       VALUES (?, ?, ?, ?, ?, 'draft', ?, ?)`,
+         (block_key, title, body, draft_title, draft_body, summary, status, sort_order, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, 'draft', ?, ?)`,
     )
-    .run(block_key, title, nextBody, title, nextBody, sortOrder, now);
+    .run(block_key, title, nextBody, title, nextBody, summary?.trim() || null, sortOrder, now);
 
   const row = getDb()
     .prepare(`SELECT * FROM content_blocks WHERE id = ?`)
