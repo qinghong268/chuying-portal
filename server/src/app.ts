@@ -23,6 +23,7 @@ import {
   adminGrantsRouter,
 } from "./routes/admin/permissions";
 import { adminDashboardRouter } from "./routes/admin/dashboard";
+import { uploadRouter } from "./routes/upload";
 
 export function createApp() {
   const app = express();
@@ -47,6 +48,13 @@ export function createApp() {
   app.use("/api/admin/permission-packages", adminPermissionPackagesRouter);
   app.use("/api/admin/admin-grants", adminGrantsRouter);
   app.use("/api/admin/dashboard", adminDashboardRouter);
+  app.use("/api/admin/upload", uploadRouter);
+
+  // Serve uploaded files as static assets (before the catch-all SPA handler)
+  app.use(
+    "/uploads",
+    express.static(join(__dirname, "..", "public", "uploads")),
+  );
 
   const clientDist =
     process.env.CLIENT_DIST ?? join(__dirname, "..", "..", "client", "dist");

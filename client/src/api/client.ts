@@ -12,7 +12,13 @@ export class ApiError extends Error {
 
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
-  if (init.body !== undefined && !headers.has("Content-Type")) {
+  // Only set Content-Type for string bodies (JSON). FormData bodies must let
+  // the browser set the multipart boundary automatically.
+  if (
+    init.body !== undefined &&
+    typeof init.body === "string" &&
+    !headers.has("Content-Type")
+  ) {
     headers.set("Content-Type", "application/json");
   }
 
