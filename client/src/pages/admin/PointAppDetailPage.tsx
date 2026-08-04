@@ -23,15 +23,20 @@ interface AdminPointApplication {
   pointsRequested: number | null;
   pointsGranted: number | null;
   rejectReason: string | null;
+  reviewerId: number | null;
   createdAt: number;
   reviewedAt: number | null;
+  userDisplayName: string | null;
+  userEmail: string | null;
+  activityTitle: string | null;
+  activityMode: "online" | "offline" | null;
+  courseTitle: string | null;
 }
 
 export function PointAppDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [app, setApp] = useState<AdminPointApplication | null>(null);
-  const [courseTitle, setCourseTitle] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pointsGranted, setPointsGranted] = useState("");
@@ -48,16 +53,6 @@ export function PointAppDetailPage() {
       );
       setApp(res.application);
       setPointsGranted(String(res.application.pointsRequested ?? ""));
-      if (res.application.courseId) {
-        try {
-          const courseRes = await api<{ course: { title: string } }>(
-            `/api/courses/${res.application.courseId}`,
-          );
-          setCourseTitle(courseRes.course.title);
-        } catch {
-          setCourseTitle(null);
-        }
-      }
     } catch {
       setError("申请不存在或加载失败");
     } finally {
@@ -136,7 +131,8 @@ export function PointAppDetailPage() {
             {applicationTypeLabel(app.type, app.templateCode)}
           </h1>
           <p className={styles.detailMeta}>
-            {applicationStatusLabel(app.status)} · 用户 #{app.userId} · 提交于{" "}
+            {applicationStatusLabel(app.status)} ·{" "}
+            {app.userDisplayName ?? `用户 #${app.userId}`} · 提交于{" "}
             {formatDateTime(app.createdAt)}
           </p>
         </div>
@@ -146,6 +142,13 @@ export function PointAppDetailPage() {
 
       <div className={shared.panel}>
         <div className={shared.formStack}>
+          <div>
+            <strong>申请人</strong>
+            <p>
+              {app.userDisplayName ?? `用户 #${app.userId}`}
+              {app.userEmail ? `（${app.userEmail}）` : ""}
+            </p>
+          </div>
           {title ? (
             <div>
               <strong>标题</strong>
@@ -155,20 +158,25 @@ export function PointAppDetailPage() {
           {app.activityId ? (
             <div>
               <strong>关联活动</strong>
-              <p>活动 #{app.activityId}</p>
+              <p>
+                {app.activityTitle ?? `活动 #${app.activityId}`}
+                {app.activityMode
+                  ? `（${app.activityMode === "online" ? "线上" : "线下"}）`
+                  : ""}
+              </p>
             </div>
           ) : null}
           {app.courseId ? (
             <div>
               <strong>关联课程</strong>
               <p>
-                {courseTitle ? `${courseTitle}（课程 #${app.courseId}）` : `课程 #${app.courseId}`}
+                {app.courseTitle ? `${app.courseTitle}（课程 #${app.courseId}）` : `课程 #${app.courseId}`}
               </p>
             </div>
           ) : null}
           {reflection ? (
             <div>
-              <strong>心得</strong>
+              <strong>心得（{reflection.length} 字）</strong>
               <p className={styles.reflection}>{reflection}</p>
             </div>
           ) : null}
@@ -176,6 +184,15 @@ export function PointAppDetailPage() {
             <strong>申请分值</strong>
             <p>{app.pointsRequested ?? "—"}</p>
           </div>
+          {app.status !== "pending" && app.reviewedAt != null ? (
+            <div>
+              <strong>审批信息</strong>
+              <p>
+                审批人 #{app.reviewerId ?? "—"} · {formatDateTime(app.reviewedAt)}
+                {app.pointsGranted != null ? ` · 分值 +${app.pointsGranted}` : ""}
+              </p>
+            </div>
+          ) : null}
           {app.pointsGranted != null ? (
             <div>
               <strong>最终分值</strong>

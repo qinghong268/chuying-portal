@@ -9,6 +9,7 @@ interface ApplicationRow {
   user_id: number;
   type: "type1" | "type2";
   activity_id: number | null;
+  course_id: number | null;
   template_code: string | null;
   payload: string;
   status: "pending" | "approved" | "rejected";
@@ -18,6 +19,12 @@ interface ApplicationRow {
   reviewer_id: number | null;
   created_at: number;
   reviewed_at: number | null;
+  // joined fields (populated by the detail query; null in list rows)
+  user_email?: string;
+  user_display_name?: string;
+  activity_title?: string | null;
+  activity_mode?: string | null;
+  course_title?: string | null;
 }
 
 function parsePayload(raw: string): Record<string, unknown> {
@@ -34,6 +41,7 @@ function toPublicApplication(row: ApplicationRow) {
     userId: row.user_id,
     type: row.type,
     activityId: row.activity_id,
+    courseId: row.course_id,
     templateCode: row.template_code,
     payload: parsePayload(row.payload),
     status: row.status,
@@ -43,7 +51,28 @@ function toPublicApplication(row: ApplicationRow) {
     reviewerId: row.reviewer_id,
     createdAt: row.created_at,
     reviewedAt: row.reviewed_at,
+    userDisplayName: row.user_display_name ?? null,
+    userEmail: row.user_email ?? null,
+    activityTitle: row.activity_title ?? null,
+    activityMode: row.activity_mode ?? null,
+    courseTitle: row.course_title ?? null,
   };
+}
+
+const APPLICATION_DETAIL_SQL = `
+  SELECT pa.*,
+         u.email AS user_email, u.display_name AS user_display_name,
+         a.title AS activity_title, a.mode AS activity_mode,
+         c.title AS course_title
+  FROM point_applications pa
+  JOIN users u ON u.id = pa.user_id
+  LEFT JOIN activities a ON a.id = pa.activity_id
+  LEFT JOIN courses c ON c.id = pa.course_id
+  WHERE pa.id = ?
+`;
+
+function getApplicationById(id: number): ApplicationRow | undefined {
+  return getDb().prepare(APPLICATION_DETAIL_SQL).get(id) as ApplicationRow | undefined;
 }
 
 const approveSchema = z.object({
@@ -83,9 +112,7 @@ adminPointAppsRouter.get("/:id", (req, res) => {
     return;
   }
 
-  const row = getDb()
-    .prepare(`SELECT * FROM point_applications WHERE id = ?`)
-    .get(id) as ApplicationRow | undefined;
+  const row = getApplicationById(id);
 
   if (!row) {
     res.status(404).json({ error: "Application not found" });
@@ -108,9 +135,7 @@ adminPointAppsRouter.post("/:id/approve", (req, res) => {
     return;
   }
 
-  const row = getDb()
-    .prepare(`SELECT * FROM point_applications WHERE id = ?`)
-    .get(id) as ApplicationRow | undefined;
+  const row = getApplicationById(id);
 
   if (!row) {
     res.status(404).json({ error: "Application not found" });
@@ -154,9 +179,9 @@ adminPointAppsRouter.post("/:id/approve", (req, res) => {
       throw new Error("CONFLICT");
     }
 
-    const updated = getDb()
-      .prepare(`SELECT * FROM point_applications WHERE id = ?`)
-      .get(id) as ApplicationRow;
+    const updated = getApplicationById(id);
+
+    if (!updated) throw new Error("NOT_FOUND");
 
     const balanceRow = getDb()
       .prepare(
@@ -191,6 +216,10 @@ adminPointAppsRouter.post("/:id/approve", (req, res) => {
       res.status(409).json({ error: "Application already reviewed" });
       return;
     }
+    if (err instanceof Error && err.message === "NOT_FOUND") {
+      res.status(404).json({ error: "Application not found" });
+      return;
+    }
     throw err;
   }
 });
@@ -208,9 +237,7 @@ adminPointAppsRouter.post("/:id/reject", (req, res) => {
     return;
   }
 
-  const row = getDb()
-    .prepare(`SELECT * FROM point_applications WHERE id = ?`)
-    .get(id) as ApplicationRow | undefined;
+  const row = getApplicationById(id);
 
   if (!row) {
     res.status(404).json({ error: "Application not found" });
@@ -239,9 +266,12 @@ adminPointAppsRouter.post("/:id/reject", (req, res) => {
     return;
   }
 
-  const updated = getDb()
-    .prepare(`SELECT * FROM point_applications WHERE id = ?`)
-    .get(id) as ApplicationRow;
+  const updated = getApplicationById(id);
+
+  if (!updated) {
+    res.status(404).json({ error: "Application not found" });
+    return;
+  }
 
   res.json({ application: toPublicApplication(updated) });
 });

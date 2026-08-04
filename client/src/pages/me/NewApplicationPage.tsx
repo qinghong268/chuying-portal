@@ -21,13 +21,23 @@ type FormType = "type1" | "type2";
 export function NewApplicationPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const preActivityId = params.get("activityId");
-  const preCourseId = params.get("courseId");
+  const activityIdParam = params.get("activityId");
+  const courseIdParam = params.get("courseId");
   const preType = params.get("type");
   const fromRejectedId = params.get("from");
 
+  // Entering from activity/course detail locks the form to type1 with the
+  // activity/course pre-selected; the type picker is hidden entirely.
+  const lockedType1 = Boolean(activityIdParam || courseIdParam);
+  const lockedActivity = lockedType1 && Boolean(activityIdParam);
+  const lockedCourse = lockedType1 && Boolean(courseIdParam);
+
   const [formType, setFormType] = useState<FormType>(
-    preType === "template" || preType === "type2" ? "type2" : "type1",
+    lockedType1
+      ? "type1"
+      : preType === "template" || preType === "type2"
+        ? "type2"
+        : "type1",
   );
   const [eligible, setEligible] = useState<EligibleActivity[]>([]);
   const [eligibleCourses, setEligibleCourses] = useState<EligibleCourse[]>([]);
@@ -60,23 +70,27 @@ export function NewApplicationPage() {
       setEligibleCourses(coursesRes.courses);
       setTemplates(templatesRes.templates);
 
-      if (preActivityId) {
-        const id = Number(preActivityId);
+      if (activityIdParam) {
+        const id = Number(activityIdParam);
         const found = eligibleRes.activities.some((a) => a.id === id);
         if (found) {
           setFormType("type1");
           setActivityId(String(id));
+        } else if (lockedActivity) {
+          setPrefillNote("该活动当前不可申请，请返回活动页或查看我的报名");
         } else {
           setPrefillNote("该活动当前不可申请，请从下方列表选择或查看我的报名");
         }
       }
 
-      if (preCourseId) {
-        const id = Number(preCourseId);
+      if (courseIdParam) {
+        const id = Number(courseIdParam);
         const found = coursesRes.courses.some((c) => c.id === id);
         if (found) {
           setFormType("type1");
           setCourseId(String(id));
+        } else if (lockedCourse) {
+          setPrefillNote("该课程当前不可申请（需学习进度达到 99%），请返回课程页完成学习");
         } else {
           setPrefillNote("该课程当前不可申请（需学习进度达到 99%），请从下方列表选择");
         }
@@ -92,7 +106,7 @@ export function NewApplicationPage() {
     } finally {
       setLoading(false);
     }
-  }, [preActivityId, preCourseId, params]);
+  }, [activityIdParam, courseIdParam, lockedActivity, lockedCourse, params]);
 
   useEffect(() => {
     void loadOptions();
@@ -109,7 +123,13 @@ export function NewApplicationPage() {
         if (cancelled || data.application.status !== "rejected") return;
         const app = data.application;
         setPrefillNote("以下内容来自已驳回申请，提交后将创建新申请");
-        if (app.type === "type1") {
+        if (lockedType1) {
+          // Type is locked to type1; only prefill the reflection content.
+          if (app.type === "type1") {
+            const ref = app.payload.reflection;
+            if (typeof ref === "string") setReflection(ref);
+          }
+        } else if (app.type === "type1") {
           setFormType("type1");
           if (app.activityId) setActivityId(String(app.activityId));
           if (app.courseId) setCourseId(String(app.courseId));
@@ -130,7 +150,7 @@ export function NewApplicationPage() {
     return () => {
       cancelled = true;
     };
-  }, [fromRejectedId]);
+  }, [fromRejectedId, lockedType1]);
 
   const selectedActivity = useMemo(
     () => eligible.find((a) => a.id === Number(activityId)),
@@ -160,7 +180,11 @@ export function NewApplicationPage() {
         const hasActivity = Boolean(activityId);
         const hasCourse = Boolean(courseId);
         if (hasActivity === hasCourse) {
-          setError("请从活动与课程中选择一项（二选一）");
+          setError(
+            lockedType1
+              ? "关联的活动或课程当前不可申请，请返回详情页"
+              : "请从活动与课程中选择一项（二选一）",
+          );
           return;
         }
         if (!reflectionValid) {
@@ -227,24 +251,26 @@ export function NewApplicationPage() {
 
       {prefillNote ? <p className={shared.muted}>{prefillNote}</p> : null}
 
-      <div className={styles.typePicker}>
-        <button
-          type="button"
-          className={`${styles.typeCard} ${formType === "type1" ? styles.typeCardActive : ""}`}
-          onClick={() => setFormType("type1")}
-        >
-          <strong>类型一：活动 / 课程心得</strong>
-          <span>绑定已报名且满足条件的活动，或学习进度 ≥ 99% 的课程</span>
-        </button>
-        <button
-          type="button"
-          className={`${styles.typeCard} ${formType === "type2" ? styles.typeCardActive : ""}`}
-          onClick={() => setFormType("type2")}
-        >
-          <strong>类型二：独立专项申请</strong>
-          <span>不绑定活动或课程，选择模板后填写事项与理由</span>
-        </button>
-      </div>
+      {!lockedType1 ? (
+        <div className={styles.typePicker}>
+          <button
+            type="button"
+            className={`${styles.typeCard} ${formType === "type1" ? styles.typeCardActive : ""}`}
+            onClick={() => setFormType("type1")}
+          >
+            <strong>类型一：活动 / 课程心得</strong>
+            <span>绑定已报名且满足条件的活动，或学习进度 ≥ 99% 的课程</span>
+          </button>
+          <button
+            type="button"
+            className={`${styles.typeCard} ${formType === "type2" ? styles.typeCardActive : ""}`}
+            onClick={() => setFormType("type2")}
+          >
+            <strong>类型二：独立专项申请</strong>
+            <span>不绑定活动或课程，选择模板后填写事项与理由</span>
+          </button>
+        </div>
+      ) : null}
 
       {loading ? (
         <p className={shared.muted}>加载中…</p>
@@ -252,75 +278,112 @@ export function NewApplicationPage() {
         <form className={styles.formSection} onSubmit={(e) => void handleSubmit(e)}>
           {formType === "type1" ? (
             <>
-              <div className={shared.field}>
-                <label htmlFor="activity-select">关联活动（可选，与课程二选一）</label>
-                <select
-                  id="activity-select"
-                  value={activityId}
-                  onChange={(e) => {
-                    setActivityId(e.target.value);
-                    if (e.target.value) setCourseId("");
-                  }}
-                >
-                  <option value="">选择已可申请的活动</option>
-                  {eligible.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.title}（{a.mode === "online" ? "线上" : "线下"}）
-                    </option>
-                  ))}
-                </select>
-                {eligible.length === 0 ? (
-                  <p className={shared.muted}>
-                    暂无可申请活动。
-                    <Link to="/me/enrollments">查看我的报名</Link>
-                    或
-                    <Link to="/activities">浏览活动</Link>
-                  </p>
-                ) : null}
-              </div>
-
-              {selectedActivity ? (
-                <div className={styles.readonly}>
-                  <p>
-                    形态：{selectedActivity.mode === "online" ? "线上" : "线下"} · 结束：
-                    {formatDateTime(selectedActivity.endAt)}
-                  </p>
-                  <p>预估积分（只读）：{selectedActivity.targetPoints}</p>
+              {lockedActivity ? (
+                <div className={shared.field}>
+                  <label htmlFor="activity-select">关联活动（已锁定，不可更改）</label>
+                  {selectedActivity ? (
+                    <p className={styles.readonly}>
+                      {selectedActivity.title}（
+                      {selectedActivity.mode === "online" ? "线上" : "线下"}）· 结束：
+                      {formatDateTime(selectedActivity.endAt)} · 预估积分（只读）：
+                      {selectedActivity.targetPoints}
+                    </p>
+                  ) : (
+                    <p className={shared.muted}>
+                      该活动当前不可申请，请返回活动页或查看我的报名
+                    </p>
+                  )}
                 </div>
-              ) : null}
+              ) : (
+                <>
+                  <div className={shared.field}>
+                    <label htmlFor="activity-select">关联活动（可选，与课程二选一）</label>
+                    <select
+                      id="activity-select"
+                      value={activityId}
+                      onChange={(e) => {
+                        setActivityId(e.target.value);
+                        if (e.target.value) setCourseId("");
+                      }}
+                    >
+                      <option value="" disabled>选择已可申请的活动</option>
+                      {eligible.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.title}（{a.mode === "online" ? "线上" : "线下"}）
+                        </option>
+                      ))}
+                    </select>
+                    {eligible.length === 0 ? (
+                      <p className={shared.muted}>
+                        暂无可申请活动。
+                        <Link to="/me/enrollments">查看我的报名</Link>
+                        或
+                        <Link to="/activities">浏览活动</Link>
+                      </p>
+                    ) : null}
+                  </div>
 
-              <div className={shared.field}>
-                <label htmlFor="course-select">关联课程（可选，与活动二选一）</label>
-                <select
-                  id="course-select"
-                  value={courseId}
-                  onChange={(e) => {
-                    setCourseId(e.target.value);
-                    if (e.target.value) setActivityId("");
-                  }}
-                >
-                  <option value="">选择学习进度 ≥ 99% 的课程</option>
-                  {eligibleCourses.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.title}（进度 {c.progressPercent}%）
-                    </option>
-                  ))}
-                </select>
-                {eligibleCourses.length === 0 ? (
-                  <p className={shared.muted}>
-                    暂无可申请课程。
-                    <Link to="/courses">浏览课程</Link>
-                    完成学习后（进度 ≥ 99%）即可申请。
-                  </p>
-                ) : null}
-              </div>
+                  {selectedActivity ? (
+                    <div className={styles.readonly}>
+                      <p>
+                        形态：{selectedActivity.mode === "online" ? "线上" : "线下"} · 结束：
+                        {formatDateTime(selectedActivity.endAt)}
+                      </p>
+                      <p>预估积分（只读）：{selectedActivity.targetPoints}</p>
+                    </div>
+                  ) : null}
+                </>
+              )}
 
-              {selectedCourse ? (
-                <div className={styles.readonly}>
-                  <p>课程：{selectedCourse.title}</p>
-                  <p>学习进度（只读）：{selectedCourse.progressPercent}%</p>
+              {lockedCourse ? (
+                <div className={shared.field}>
+                  <label htmlFor="course-select">关联课程（已锁定，不可更改）</label>
+                  {selectedCourse ? (
+                    <p className={styles.readonly}>
+                      {selectedCourse.title} · 学习进度（只读）：{selectedCourse.progressPercent}%
+                    </p>
+                  ) : (
+                    <p className={shared.muted}>
+                      该课程当前不可申请（需学习进度达到 99%），请返回课程页完成学习
+                    </p>
+                  )}
                 </div>
-              ) : null}
+              ) : (
+                <>
+                  <div className={shared.field}>
+                    <label htmlFor="course-select">关联课程（可选，与活动二选一）</label>
+                    <select
+                      id="course-select"
+                      value={courseId}
+                      onChange={(e) => {
+                        setCourseId(e.target.value);
+                        if (e.target.value) setActivityId("");
+                      }}
+                    >
+                      <option value="" disabled>选择学习进度 ≥ 99% 的课程</option>
+                      {eligibleCourses.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.title}（进度 {c.progressPercent}%）
+                        </option>
+                      ))}
+                    </select>
+                    {eligibleCourses.length === 0 ? (
+                      <p className={shared.muted}>
+                        暂无可申请课程。
+                        <Link to="/courses">浏览课程</Link>
+                        完成学习后（进度 ≥ 99%）即可申请。
+                      </p>
+                    ) : null}
+                  </div>
+
+                  {selectedCourse ? (
+                    <div className={styles.readonly}>
+                      <p>课程：{selectedCourse.title}</p>
+                      <p>学习进度（只读）：{selectedCourse.progressPercent}%</p>
+                    </div>
+                  ) : null}
+                </>
+              )}
 
               <div className={shared.field}>
                 <label htmlFor="reflection">心得正文 *</label>
@@ -350,7 +413,7 @@ export function NewApplicationPage() {
                   onChange={(e) => setTemplateCode(e.target.value)}
                   required
                 >
-                  <option value="">选择模板</option>
+                  <option value="" disabled>选择模板</option>
                   {templates.map((t) => (
                     <option key={t.code} value={t.code}>
                       {t.name}
