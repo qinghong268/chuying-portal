@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { api } from "../../api/client";
+import { AiInsightBar } from "./components/AiInsightBar";
+import { TodoQueue } from "./components/TodoQueue";
+import { StatsCards } from "./components/StatsCards";
+import { TrendChart } from "./components/TrendChart";
+import { DetailDrawer } from "./components/DetailDrawer";
 import { formatDateTime } from "../../lib/datetime";
 import shared from "../shared.module.css";
-import styles from "./admin.module.css";
+import styles from "./DashboardPage.module.css";
 
 interface DashboardSummary {
   eagleCount: number;
@@ -13,14 +17,50 @@ interface DashboardSummary {
   enrollmentsLast7d: number;
   ledgerCountLast7d: number;
   ledgerPointsLast7d: number;
-  dailyStats?: Array<{ date: string; enrollments: number; points: number }>;
   generatedAt: number;
+  dailyStats: Array<{ date: string; enrollments: number; points: number }>;
+  prevWeek?: {
+    enrollments: number;
+    points: number;
+    ledgerCount: number;
+  } | null;
+  sparklines?: {
+    enrollments: Array<{ date: string; value: number }>;
+    points: Array<{ date: string; value: number }>;
+  } | null;
+  pendingJoins?: Array<{
+    id: number;
+    name: string;
+    contact: string;
+    created_at: number;
+  }> | null;
+  pendingPointApps?: Array<{
+    id: number;
+    type: string;
+    points_requested: number;
+    created_at: number;
+    user_display_name: string;
+    ai_score?: number;
+    ai_action?: string;
+  }> | null;
+  activeActivity?: {
+    id: number;
+    title: string;
+    end_at: number;
+    enrollment_count: number;
+  } | null;
+  dailyDetail?: Array<{
+    date: string;
+    enrollments: Array<{ id: number; userName: string; activityTitle: string }>;
+    ledger: Array<{ id: number; delta: number; description: string }>;
+  }> | null;
 }
 
 export function DashboardPage() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [detailDay, setDetailDay] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -29,7 +69,7 @@ export function DashboardPage() {
       const data = await api<DashboardSummary>("/api/admin/dashboard/summary");
       setSummary(data);
     } catch {
-      setError("看板数据加载失败");
+      setError("数据加载失败");
     } finally {
       setLoading(false);
     }
@@ -39,138 +79,55 @@ export function DashboardPage() {
     void load();
   }, [load]);
 
+  if (loading) return <p className={shared.muted}>加载中…</p>;
+  if (!summary) return <p className={shared.error}>{error || "数据不可用"}</p>;
+
   return (
-    <>
-      <div className={styles.pageHead}>
-        <h1 className={styles.pageHeadTitle}>数据看板</h1>
-        <button
-          type="button"
-          className={shared.btnSecondary}
-          onClick={() => void load()}
-          disabled={loading}
-        >
-          刷新
-        </button>
+    <div className={styles.dashboard}>
+      <div className={styles.header}>
+        <h1 className={styles.title}>数据看板</h1>
+        <div className={styles.headerRight}>
+          <span className={shared.muted}>更新于 {formatDateTime(summary.generatedAt)}</span>
+          <button
+            type="button"
+            onClick={() => void load()}
+            disabled={loading}
+            className={shared.btnSecondary}
+          >
+            刷新
+          </button>
+        </div>
       </div>
 
-      {error ? <p className={shared.error}>{error}</p> : null}
-      {loading ? (
-        <p className={shared.muted}>加载中…</p>
-      ) : summary ? (
-        <>
-          <div className={styles.statGrid}>
-            <Link
-              to="/admin/users?role=eagle"
-              className={`${shared.panel} ${styles.statCard} ${styles.statCardClickable}`}
-            >
-              <span className={styles.statLabel}>活跃雏英</span>
-              <span className={styles.statValue}>{summary.eagleCount}</span>
-            </Link>
-            <Link
-              to="/admin/join"
-              className={`${shared.panel} ${styles.statCard} ${styles.statCardClickable}`}
-            >
-              <span className={styles.statLabel}>待审加入</span>
-              <span className={styles.statValue}>{summary.pendingJoinCount}</span>
-            </Link>
-            <Link
-              to="/admin/point-apps"
-              className={`${shared.panel} ${styles.statCard} ${styles.statCardClickable}`}
-            >
-              <span className={styles.statLabel}>待审积分</span>
-              <span className={styles.statValue}>{summary.pendingPointAppCount}</span>
-            </Link>
-            <Link
-              to="/admin/activities"
-              className={`${shared.panel} ${styles.statCard} ${styles.statCardClickable}`}
-            >
-              <span className={styles.statLabel}>进行中活动</span>
-              <span className={styles.statValue}>{summary.activeActivityCount}</span>
-            </Link>
-            <Link
-              to="/admin/activities"
-              className={`${shared.panel} ${styles.statCard} ${styles.statCardClickable}`}
-            >
-              <span className={styles.statLabel}>近 7 日报名</span>
-              <span className={styles.statValue}>{summary.enrollmentsLast7d}</span>
-            </Link>
-            <Link
-              to="/admin/point-apps"
-              className={`${shared.panel} ${styles.statCard} ${styles.statCardClickable}`}
-            >
-              <span className={styles.statLabel}>近 7 日积分</span>
-              <span className={styles.statValue}>+{summary.ledgerPointsLast7d}</span>
-              <span className={shared.muted}>{summary.ledgerCountLast7d} 笔流水</span>
-            </Link>
-          </div>
+      {/* AI 洞察条 */}
+      <AiInsightBar />
 
-          {summary.dailyStats ? (
-            <div className={shared.panel}>
-              <h3>近7日趋势</h3>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "flex-end",
-                  gap: 12,
-                  height: 150,
-                  padding: "16px 0",
-                }}
-              >
-                {summary.dailyStats.map((d) => (
-                  <div
-                    key={d.date}
-                    style={{
-                      flex: 1,
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      gap: 4,
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        gap: 2,
-                        width: "100%",
-                      }}
-                    >
-                      <div
-                        title={`报名 ${d.enrollments}`}
-                        style={{
-                          width: "100%",
-                          background: "#0D9488",
-                          height: Math.max(4, d.enrollments * 20),
-                          borderRadius: "4px 4px 0 0",
-                          minHeight: 4,
-                        }}
-                      />
-                      <div
-                        title={`积分 +${d.points}`}
-                        style={{
-                          width: "60%",
-                          background: "#D97706",
-                          height: Math.max(4, d.points / 5),
-                          borderRadius: "4px 4px 0 0",
-                          minHeight: 4,
-                        }}
-                      />
-                    </div>
-                    <span style={{ fontSize: 11, color: "#666" }}>{d.date}</span>
-                  </div>
-                ))}
-              </div>
-              <div style={{ display: "flex", gap: 16, fontSize: 12, color: "#666" }}>
-                <span>■ 报名</span>
-                <span>■ 积分</span>
-              </div>
-            </div>
-          ) : null}
+      {/* 主区域: 待办队列(左2/3) + 指标卡片(右1/3) */}
+      <div className={styles.mainGrid}>
+        <div className={styles.todoCol}>
+          <TodoQueue
+            pendingJoins={summary.pendingJoins || []}
+            pendingPointApps={summary.pendingPointApps || []}
+            activeActivity={summary.activeActivity || null}
+          />
+        </div>
+        <div className={styles.statsCol}>
+          <StatsCards {...summary} />
+        </div>
+      </div>
 
-          <p className={shared.muted}>数据更新于 {formatDateTime(summary.generatedAt)}</p>
-        </>
-      ) : null}
-    </>
+      {/* 趋势图 */}
+      <TrendChart
+        dailyStats={summary.dailyStats || []}
+        onDayClick={(i) => setDetailDay(i)}
+      />
+
+      {/* 每日明细抽屉 */}
+      <DetailDrawer
+        dayIndex={detailDay}
+        dailyDetail={summary.dailyDetail || []}
+        onClose={() => setDetailDay(null)}
+      />
+    </div>
   );
 }
