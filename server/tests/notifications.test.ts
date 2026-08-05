@@ -53,15 +53,21 @@ describe("notifications", () => {
     expect(res.status).toBe(401);
   });
 
-  it("returns empty sections for an eagle without reminders", async () => {
+  it("returns only seeded demo reminders for an eagle without extra data", async () => {
     const app = createApp();
     const eagle = await loginEagle(app);
     const res = await eagle.get("/api/me/notifications");
     expect(res.status).toBe(200);
     expect(res.body.upcomingActivities).toEqual([]);
     expect(res.body.inProgressCourses).toEqual([]);
-    expect(res.body.pendingReflections).toEqual([]);
-    expect(res.body.closingWindows).toEqual([]);
+    // Seed demo data: one ended activity without a submitted reflection.
+    expect(res.body.pendingReflections).toHaveLength(1);
+    expect(res.body.pendingReflections[0].title).toBe("线上技术分享会");
+    // Seed demo data: both ended demo activities have windows closing within 24h.
+    const closingTitles = res.body.closingWindows
+      .map((w: { title: string }) => w.title)
+      .sort();
+    expect(closingTitles).toEqual(["往期线下实践", "线上技术分享会"]);
   });
 
   it("lists upcoming activities, in-progress courses, pending reflections and closing windows", async () => {

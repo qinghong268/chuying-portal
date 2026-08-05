@@ -168,4 +168,94 @@ export function runSeed(): void {
     1,
     ts,
   );
+
+  seedDemoData();
+}
+
+/**
+ * Demo-only records to make a fresh install immediately demo-ready:
+ * ended activities (24h apply window), demo enrollments, pending
+ * reflections/applications, and a pending join application.
+ * Only runs on a freshly seeded database (guarded by the caller).
+ */
+function seedDemoData(): void {
+  const db = getDb();
+  const now = Date.now();
+  const day = 24 * 60 * 60 * 1000;
+  const eagleId = 1; // eagle@demo
+
+  // 1. Create 2 ended activities (ended 1-2 days ago, within 24h apply window)
+  const endedActivity1 = db.prepare(
+    `INSERT INTO activities (title, description, mode, start_at, end_at, enroll_deadline, point_apply_deadline, target_points, status, featured, created_at)
+     VALUES (?, ?, 'offline', ?, ?, ?, ?, ?, 'published', 1, ?)`,
+  ).run(
+    "往期线下实践", "已结束的线下实践活动，用于演示心得申请24h窗口。",
+    now - 3 * day, now - day, now - 3 * day, now + day, 20, now,
+  );
+
+  const endedActivity2 = db.prepare(
+    `INSERT INTO activities (title, description, mode, start_at, end_at, enroll_deadline, point_apply_deadline, target_points, status, featured, created_at)
+     VALUES (?, ?, 'online', ?, ?, ?, ?, ?, 'published', 0, ?)`,
+  ).run(
+    "线上技术分享会", "已结束的线上技术分享，用于演示线上活动心得申请。",
+    now - 2 * day, now - day / 2, now - 2 * day, now + day, 15, now,
+  );
+
+  const actId1 = Number(endedActivity1.lastInsertRowid);
+  const actId2 = Number(endedActivity2.lastInsertRowid);
+
+  // 2. Enroll eagle in both ended activities
+  db.prepare(
+    `INSERT INTO enrollments (user_id, activity_id, status, enrolled_at) VALUES (?, ?, 'enrolled', ?)`,
+  ).run(eagleId, actId1, now - 2 * day);
+  db.prepare(
+    `INSERT INTO enrollments (user_id, activity_id, status, enrolled_at) VALUES (?, ?, 'enrolled', ?)`,
+  ).run(eagleId, actId2, now - day);
+
+  // 3. Create a pending type1 reflection for the first ended activity
+  const reflection =
+    "通过参加往期线下实践，我对雏英计划的实践培养模式有了切身体会。活动内容涵盖了团队协作、项目管理和技术实践三大模块，让我在实践中快速提升了综合能力。特别是与导师和其他雏英的深入交流，让我对自己未来的职业发展方向有了更清晰的认知。这次实践经历让我深刻理解到理论知识与实际操作相结合的重要性，也坚定了我继续参与雏英计划各项活动的决心。期待在未来的活动中获得更多成长。";
+  db.prepare(
+    `INSERT INTO point_applications (user_id, type, activity_id, course_id, template_code, payload, status, points_requested, created_at)
+     VALUES (?, 'type1', ?, NULL, NULL, ?, 'pending', ?, ?)`,
+  ).run(eagleId, actId1, JSON.stringify({ reflection }), 20, now);
+
+  // 4. Create a pending type2 application
+  db.prepare(
+    `INSERT INTO point_applications (user_id, type, activity_id, course_id, template_code, payload, status, points_requested, created_at)
+     VALUES (?, 'type2', NULL, NULL, 'contest_award', ?, 'pending', ?, ?)`,
+  ).run(
+    eagleId,
+    JSON.stringify({
+      title: "全国算法竞赛二等奖",
+      reason:
+        "代表公司参加全国大学生算法竞赛并获得二等奖，展示了扎实的算法功底和解决复杂问题的能力。",
+    }),
+    50,
+    now,
+  );
+
+  // 5. Create a pending join application
+  db.prepare(
+    `INSERT INTO join_applications (name, contact, message, status, created_at)
+     VALUES (?, ?, ?, 'pending', ?)`,
+  ).run(
+    "演示申请人",
+    "demo-applicant@example.com",
+    "我对雏英计划非常感兴趣，希望加入这个充满活力的团队，与公司共同成长。",
+    now,
+  );
+
+  // 6. Add AI reviews for the pending type1 app (so dashboard shows AI risk badges)
+  const type1AppId = db
+    .prepare(
+      "SELECT id FROM point_applications WHERE user_id = ? AND type = 'type1' AND status = 'pending' ORDER BY id DESC LIMIT 1",
+    )
+    .get(eagleId) as { id: number };
+  if (type1AppId) {
+    db.prepare(
+      `INSERT INTO ai_reviews (application_id, score, relevance, suggestion, recommended_action, suggested_points, draft_reject_reason, created_at)
+       VALUES (?, 7, 8, '心得内容完整，结合实践经历，语言流畅。建议通过并授予目标积分。', 'approve', 20, '', ?)`,
+    ).run(type1AppId.id, now);
+  }
 }

@@ -143,8 +143,11 @@ describe("activity enroll and progress", () => {
     await agent.post("/api/auth/demo-login").send({ role: "eagle" });
 
     const listRes = await agent.get("/api/activities");
+    // The seed includes ended demo activities (sorted first by start_at),
+    // so pick an online activity that has not started yet.
     const online = listRes.body.activities.find(
-      (a: { mode: string }) => a.mode === "online",
+      (a: { mode: string; startAt: number }) =>
+        a.mode === "online" && a.startAt > Date.now(),
     );
     expect(online).toBeDefined();
 

@@ -166,10 +166,12 @@ describe("GET /api/admin/dashboard/summary", () => {
     }
 
     expect(summary.eagleCount).toBe(3);
-    expect(summary.pendingJoinCount).toBe(2);
-    expect(summary.pendingPointAppCount).toBe(2);
+    // seed() adds 1 demo join application, 2 demo point applications, and
+    // 2 demo enrollments for eagle@demo on top of the data seeded here.
+    expect(summary.pendingJoinCount).toBe(3);
+    expect(summary.pendingPointAppCount).toBe(4);
     expect(summary.activeActivityCount).toBe(2);
-    expect(summary.enrollmentsLast7d).toBe(3);
+    expect(summary.enrollmentsLast7d).toBe(5);
     expect(summary.ledgerCountLast7d).toBe(3);
     expect(summary.ledgerPointsLast7d).toBe(80);
     expect(typeof summary.generatedAt).toBe("number");
@@ -197,7 +199,7 @@ describe("GET /api/admin/dashboard/summary", () => {
 
     const totalEnrollments = stats.reduce((sum, e) => sum + e.enrollments, 0);
     const totalPoints = stats.reduce((sum, e) => sum + e.points, 0);
-    expect(totalEnrollments).toBe(4); // 3 enrolled + 1 cancelled within window
+    expect(totalEnrollments).toBe(6); // 3 enrolled + 1 cancelled + 2 demo enrollments within window
     expect(totalPoints).toBe(80); // only positive deltas counted
 
     // oldest entry is the first one, i.e. 6 days ago
@@ -249,9 +251,14 @@ describe("GET /api/admin/dashboard/summary", () => {
       contact: string;
       createdAt: number;
     }>;
-    expect(joins).toHaveLength(2);
+    expect(joins).toHaveLength(3); // +1 demo join application from seed()
+    const demoJoinId = (
+      getDb()
+        .prepare(`SELECT id FROM join_applications WHERE name = '演示申请人'`)
+        .get() as { id: number }
+    ).id;
     const ids = joins.map((j) => j.id).sort();
-    expect(ids).toEqual([...seeded.pendingJoinIds].sort());
+    expect(ids).toEqual([...seeded.pendingJoinIds, demoJoinId].sort());
     for (const join of joins) {
       expect(typeof join.name).toBe("string");
       expect(typeof join.contact).toBe("string");
@@ -270,12 +277,20 @@ describe("GET /api/admin/dashboard/summary", () => {
       aiAction: string | null;
       riskLabel: string;
     }>;
-    expect(apps).toHaveLength(2);
+    expect(apps).toHaveLength(4); // +2 demo point applications from seed()
+    const demoAppIds = (
+      getDb()
+        .prepare(
+          `SELECT id FROM point_applications
+           WHERE activity_id IS NOT NULL OR template_code IS NOT NULL`,
+        )
+        .all() as { id: number }[]
+    ).map((r) => r.id);
     const ids = apps.map((a) => a.id).sort();
-    expect(ids).toEqual([...seeded.pendingPointAppIds].sort());
+    expect(ids).toEqual([...seeded.pendingPointAppIds, ...demoAppIds].sort());
     expect(ids).not.toContain(seeded.approvedPointAppId);
     for (const app of apps) {
-      expect(app.type).toBe("type1");
+      expect(["type1", "type2"]).toContain(app.type);
       expect(typeof app.userDisplayName).toBe("string");
       expect(typeof app.riskLabel).toBe("string");
     }
@@ -291,7 +306,7 @@ describe("GET /api/admin/dashboard/summary", () => {
 
     const dayAgo = detail.find((d) => d.date === dateLabel(1));
     expect(dayAgo).toBeDefined();
-    expect(dayAgo!.enrollments).toHaveLength(2); // enrolled + cancelled records
+    expect(dayAgo!.enrollments).toHaveLength(3); // enrolled + cancelled + 1 demo enrollment
     expect(dayAgo!.ledger).toHaveLength(1);
 
     const threeDaysAgo = detail.find((d) => d.date === dateLabel(3));
