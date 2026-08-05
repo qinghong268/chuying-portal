@@ -339,3 +339,33 @@ adminContentRouter.patch("/blocks/sort", (req, res) => {
 
   res.json({ ok: true });
 });
+
+// POST /blocks/ai-draft - Generate AI content draft
+adminContentRouter.post("/blocks/ai-draft", async (req, res) => {
+  const { topic } = req.body;
+  if (!topic || typeof topic !== "string" || topic.trim().length === 0) {
+    res.status(400).json({ error: "请输入内容主题" });
+    return;
+  }
+
+  try {
+    const { deepseekChat } = await import("../../lib/deepseek");
+    const response = await deepseekChat([
+      { role: "system", content: `你是雏英计划的内容运营编辑。根据给定的主题，生成适合官网宣传的内容块。必须以JSON格式返回：{"title":"标题","summary":"简介(≤100字)","body":"<h2>标题</h2><p>段落</p><ul><li>要点</li></ul>"}。简介简洁有力，正文使用HTML标签排版（h2/p/ul/li/strong），200-500字。` },
+      { role: "user", content: topic }
+    ], { temperature: 0.7, maxTokens: 800 });
+
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("Invalid AI response");
+    const draft = JSON.parse(jsonMatch[0]);
+
+    res.json({
+      title: draft.title || "",
+      summary: draft.summary || "",
+      body: draft.body || "",
+    });
+  } catch (err) {
+    console.error("AI draft error:", err);
+    res.status(502).json({ error: "AI内容生成失败，请稍后重试" });
+  }
+});

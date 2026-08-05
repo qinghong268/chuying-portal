@@ -34,6 +34,10 @@ export function ContentPage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
+  const [aiTopic, setAiTopic] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [showAiDraft, setShowAiDraft] = useState(false);
+
   const [showCreate, setShowCreate] = useState(false);
   const [newKey, setNewKey] = useState("");
   const [newTitle, setNewTitle] = useState("");
@@ -93,6 +97,31 @@ export function ContentPage() {
       ta.focus();
       ta.setSelectionRange(start + replacement.length, start + replacement.length);
     });
+  }
+
+  async function generateDraft() {
+    if (!aiTopic.trim()) return;
+    setAiLoading(true);
+    setError(null);
+    try {
+      const res = await api<{ title: string; summary: string; body: string }>(
+        "/api/admin/content/blocks/ai-draft",
+        {
+          method: "POST",
+          body: JSON.stringify({ topic: aiTopic.trim() }),
+        },
+      );
+      setTitle(res.title);
+      setSummary(res.summary);
+      setBody(res.body);
+      setShowAiDraft(false);
+      setAiTopic("");
+      setMessage("AI 草稿已填入，请检查后保存");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "AI生成失败");
+    } finally {
+      setAiLoading(false);
+    }
   }
 
   async function saveDraft() {
@@ -306,11 +335,49 @@ export function ContentPage() {
           <div className={shared.panel}>
             {selected ? (
               <>
-                <h2 className={shared.sectionTitle}>编辑 · {selected.key}</h2>
+                <div className={styles.editorHead}>
+                  <h2 className={shared.sectionTitle}>编辑 · {selected.key}</h2>
+                  <button
+                    type="button"
+                    className={shared.btnSecondary}
+                    onClick={() => {
+                      setError(null);
+                      setShowAiDraft((v) => !v);
+                    }}
+                  >
+                    🤖 AI 生成草稿
+                  </button>
+                </div>
                 <p className={shared.muted}>
                   状态：{contentStatusLabel(selected.status)} · 更新于{" "}
                   {formatDateTime(selected.updatedAt)}
                 </p>
+                {showAiDraft ? (
+                  <div className={styles.aiDraftPanel}>
+                    <p className={shared.muted}>
+                      输入内容主题，AI 将自动生成标题、简介与正文草稿。
+                    </p>
+                    <div className={styles.aiDraftRow}>
+                      <input
+                        value={aiTopic}
+                        onChange={(e) => setAiTopic(e.target.value)}
+                        placeholder="雏英计划2026届迎新活动"
+                        disabled={aiLoading}
+                      />
+                      <button
+                        type="button"
+                        className={shared.btnPrimary}
+                        disabled={aiLoading || aiTopic.trim().length === 0}
+                        onClick={() => void generateDraft()}
+                      >
+                        生成草稿
+                      </button>
+                    </div>
+                    {aiLoading ? (
+                      <p className={shared.muted}>AI 正在生成内容…</p>
+                    ) : null}
+                  </div>
+                ) : null}
                 <div className={shared.formStack}>
                   <div className={shared.field}>
                     <label htmlFor="block-title">标题</label>
