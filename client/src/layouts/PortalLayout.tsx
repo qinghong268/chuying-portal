@@ -1,6 +1,8 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { ChatWidget } from "../components/ChatWidget";
+import { NotificationModal } from "../components/NotificationModal";
+import { useNotification } from "../hooks/useNotification";
 import styles from "./PortalLayout.module.css";
 
 const NAV: { to: string; label: string; end?: boolean }[] = [
@@ -15,6 +17,7 @@ export function PortalLayout() {
   const { user, loading, demoLogin, logout } = useAuth();
   const location = useLocation();
   const showChat = user !== null && user.role === "eagle" && location.pathname !== "/";
+  const { notification, dismissNotification } = useNotification(user);
 
   return (
     <div className={styles.shell}>
@@ -86,6 +89,9 @@ export function PortalLayout() {
         </div>
       </footer>
       {showChat ? <ChatWidget /> : null}
+      {notification ? (
+        <NotificationModal data={notification} onClose={dismissNotification} />
+      ) : null}
     </div>
   );
 }

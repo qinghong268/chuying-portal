@@ -10,6 +10,7 @@ import { enrollmentsRouter } from "./routes/enrollments";
 import { progressRouter } from "./routes/progress";
 import { coursesRouter } from "./routes/courses";
 import { joinRouter } from "./routes/join";
+import { notificationsRouter } from "./routes/notifications";
 import { pointAppsRouter } from "./routes/pointApps";
 import { pointTemplatesRouter } from "./routes/pointTemplates";
 import { adminPointAppsRouter } from "./routes/admin/pointApps";
@@ -43,6 +44,7 @@ export function createApp() {
   app.use("/api/join", joinRouter);
   app.use("/api/point-type-templates", pointTemplatesRouter);
   app.use("/api/me", pointAppsRouter);
+  app.use("/api", notificationsRouter);
   app.use("/api/admin/point-applications", adminPointAppsRouter);
   app.use("/api/admin/point-types", adminPointTypesRouter);
   app.use("/api/admin/content", adminContentRouter);
