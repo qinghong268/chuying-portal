@@ -1,5 +1,6 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { ChatWidget } from "../components/ChatWidget";
 import styles from "./PortalLayout.module.css";
 
 const NAV: { to: string; label: string; end?: boolean }[] = [
@@ -12,6 +13,8 @@ const NAV: { to: string; label: string; end?: boolean }[] = [
 
 export function PortalLayout() {
   const { user, loading, demoLogin, logout } = useAuth();
+  const location = useLocation();
+  const showChat = user !== null && user.role === "eagle" && location.pathname !== "/";
 
   return (
     <div className={styles.shell}>
@@ -82,6 +85,7 @@ export function PortalLayout() {
           <div>© SoftTong / 软通智慧</div>
         </div>
       </footer>
+      {showChat ? <ChatWidget /> : null}
     </div>
   );
 }

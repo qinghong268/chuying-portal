@@ -11,6 +11,7 @@ export interface AdminNavItem {
 export const ADMIN_NAV: AdminNavItem[] = [
   { to: "/admin", label: "控制台", end: true },
   { to: "/admin/content", label: "内容运营", permission: "content" },
+  { to: "/admin/kb", label: "知识库", permission: "content" },
   { to: "/admin/join", label: "加入审核", permission: "join_review" },
   { to: "/admin/activities", label: "活动管理", permission: "activity" },
   { to: "/admin/courses", label: "课程管理", permission: "activity" },

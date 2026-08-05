@@ -85,6 +85,18 @@ function migrateAiReviewsTable(): void {
   `);
 }
 
+function migrateKbDocumentsTable(): void {
+  getDb().exec(`
+    CREATE TABLE IF NOT EXISTS kb_documents (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+  `);
+}
+
 export function migrate(): void {
   const sql = readFileSync(join(__dirname, "migrate.sql"), "utf8");
   getDb().exec(sql);
@@ -97,4 +109,5 @@ export function migrate(): void {
   migratePointAppCourseId();
   migrateContentBlockSummaryColumn();
   migrateAiReviewsTable();
+  migrateKbDocumentsTable();
 }

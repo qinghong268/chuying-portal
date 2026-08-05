@@ -23,6 +23,8 @@ import {
   adminGrantsRouter,
 } from "./routes/admin/permissions";
 import { adminDashboardRouter } from "./routes/admin/dashboard";
+import { adminKbRouter } from "./routes/admin/kb";
+import { kbChatRouter } from "./routes/kbChat";
 import { uploadRouter } from "./routes/upload";
 
 export function createApp() {
@@ -48,6 +50,8 @@ export function createApp() {
   app.use("/api/admin/permission-packages", adminPermissionPackagesRouter);
   app.use("/api/admin/admin-grants", adminGrantsRouter);
   app.use("/api/admin/dashboard", adminDashboardRouter);
+  app.use("/api/admin/kb", adminKbRouter);
+  app.use("/api/kb-chat", kbChatRouter);
   app.use("/api/admin/upload", uploadRouter);
 
   // Serve uploaded files as static assets (before the catch-all SPA handler)

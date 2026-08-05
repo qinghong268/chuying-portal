@@ -35,6 +35,7 @@ import { PointAppDetailPage } from "./pages/admin/PointAppDetailPage";
 import { UsersPage } from "./pages/admin/UsersPage";
 import { DashboardPage } from "./pages/admin/DashboardPage";
 import { PermissionsPage } from "./pages/admin/PermissionsPage";
+import { KbPage } from "./pages/admin/KbPage";
 
 export default function App() {
   return (
@@ -202,6 +203,14 @@ export default function App() {
               element={
                 <RequireAdminPermission permission="permission">
                   <PermissionsPage />
+                </RequireAdminPermission>
+              }
+            />
+            <Route
+              path="kb"
+              element={
+                <RequireAdminPermission permission="content">
+                  <KbPage />
                 </RequireAdminPermission>
               }
             />
