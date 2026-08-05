@@ -1,12 +1,25 @@
+/*
+ * 数据看板（Dashboard）页面布局样式。
+ *
+ * 各区块的组件级样式位于 components/ 下各自的 module.css：
+ * - AiInsightBar.module.css — AI 运营洞察（蓝色渐变卡片）
+ * - TodoQueue.module.css    — 待办队列
+ * - StatsCards.module.css   — 统计卡片
+ * - TrendChart.module.css   — 近 7 日趋势图
+ * - DetailDrawer.module.css — 右侧滑入明细抽屉（overlay + slide-in 动画）
+ * 本文件只负责页面级布局（头部、主网格、趋势区、加载/错误/空状态）。
+ */
+
 .dashboard {
   max-width: 1280px;
   margin: 0 auto;
   padding: var(--space-lg) 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-xl);
+  gap: var(--space-xl); /* 32px 区块间距 */
 }
 
+/* Header: 标题 + 刷新按钮 + 更新时间戳 */
 .header {
   display: flex;
   align-items: center;
@@ -18,38 +31,146 @@
 .title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 1.5rem;
+  font-size: 1.5rem; /* 24px */
   font-weight: 700;
-  color: var(--color-foreground);
+  color: var(--color-foreground); /* #1a1a2e */
 }
 
 .headerRight {
   display: flex;
   align-items: center;
-  gap: var(--space-md);
+  gap: var(--space-md); /* 16px */
 }
 
+.timestamp {
+  font-size: 0.85rem;
+  color: var(--color-muted-foreground);
+}
+
+.refreshBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-card);
+  color: var(--color-foreground);
+  padding: 0.55rem 1rem;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.refreshBtn:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-muted);
+}
+
+.refreshBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* AI Insight bar（蓝色渐变卡片）与 Trend charts（底部通栏）直接渲染组件，
+   卡片与间距由 AiInsightBar.module.css / TrendChart.module.css 负责 */
+
+/* Main grid: todo (2/3) + stats (1/3) */
 .mainGrid {
   display: grid;
   grid-template-columns: 2fr 1fr;
-  gap: var(--space-lg);
+  gap: var(--space-lg); /* 24px */
   align-items: start;
 }
 
 .todoCol {
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
+  gap: var(--space-lg); /* 24px */
   min-width: 0;
 }
 
 .statsCol {
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
+  gap: var(--space-lg); /* 24px */
   min-width: 0;
 }
 
+/* Loading skeleton */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-muted);
+  border-radius: var(--radius-md);
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.65),
+    transparent
+  );
+  animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.skeletonLine {
+  height: 14px;
+  width: 100%;
+}
+
+.skeletonCard {
+  height: 120px;
+  width: 100%;
+}
+
+.skeletonChart {
+  height: 240px;
+  width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+  }
+}
+
+/* Error state */
+.error {
+  background: rgba(220, 38, 38, 0.08);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  color: var(--color-destructive);
+  border-radius: var(--radius-md);
+  padding: var(--space-md) var(--space-lg);
+  margin-bottom: var(--space-lg);
+  font-size: 0.95rem;
+}
+
+/* Empty state messages */
+.empty {
+  background: var(--color-card);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  color: var(--color-muted-foreground);
+  padding: var(--space-2xl) var(--space-lg);
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+/* Responsive */
 @media (max-width: 1024px) {
   .mainGrid {
     grid-template-columns: 1fr;
