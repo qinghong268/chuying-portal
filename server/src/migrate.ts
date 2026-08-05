@@ -97,6 +97,23 @@ function migrateKbDocumentsTable(): void {
   `);
 }
 
+function migrateWeeklyReportsTable(): void {
+  getDb().exec(`
+    CREATE TABLE IF NOT EXISTS weekly_reports (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      week_start TEXT NOT NULL,
+      enrollments_count INTEGER NOT NULL DEFAULT 0,
+      courses_progressed INTEGER NOT NULL DEFAULT 0,
+      points_earned INTEGER NOT NULL DEFAULT 0,
+      applications_count INTEGER NOT NULL DEFAULT 0,
+      ai_summary TEXT,
+      created_at INTEGER NOT NULL,
+      UNIQUE (user_id, week_start)
+    );
+  `);
+}
+
 export function migrate(): void {
   const sql = readFileSync(join(__dirname, "migrate.sql"), "utf8");
   getDb().exec(sql);
@@ -110,4 +127,5 @@ export function migrate(): void {
   migrateContentBlockSummaryColumn();
   migrateAiReviewsTable();
   migrateKbDocumentsTable();
+  migrateWeeklyReportsTable();
 }

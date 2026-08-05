@@ -18,6 +18,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { to: "/admin/point-types", label: "积分类型", permission: "point_type" },
   { to: "/admin/point-apps", label: "积分审批", permission: "point_review" },
   { to: "/admin/users", label: "用户管理", permission: "user" },
+  { to: "/admin/weekly-reports", label: "周报管理", permission: "user" },
   { to: "/admin/dashboard", label: "数据看板", permission: "dashboard" },
   { to: "/admin/permissions", label: "权限管理", permission: "permission" },
 ];

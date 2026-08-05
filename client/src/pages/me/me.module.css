@@ -228,6 +228,33 @@
   line-height: 1.7;
 }
 
+.weeklyReportList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.weeklyReportCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.weeklyReportHead {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-xs);
+  font-size: 0.95rem;
+}
+
+.weeklyReportSummary {
+  margin: 0;
+  line-height: 1.7;
+  color: var(--color-foreground);
+}
+
 .skeleton {
   height: 1.5rem;
   background: linear-gradient(90deg, var(--color-muted) 25%, #f0f0f0 50%, var(--color-muted) 75%);

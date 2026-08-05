@@ -37,6 +37,7 @@ import { UsersPage } from "./pages/admin/UsersPage";
 import { DashboardPage } from "./pages/admin/DashboardPage";
 import { PermissionsPage } from "./pages/admin/PermissionsPage";
 import { KbPage } from "./pages/admin/KbPage";
+import { WeeklyReportsPage } from "./pages/admin/WeeklyReportsPage";
 
 export default function App() {
   return (
@@ -213,6 +214,14 @@ export default function App() {
               element={
                 <RequireAdminPermission permission="content">
                   <KbPage />
+                </RequireAdminPermission>
+              }
+            />
+            <Route
+              path="weekly-reports"
+              element={
+                <RequireAdminPermission permission="user">
+                  <WeeklyReportsPage />
                 </RequireAdminPermission>
               }
             />

@@ -546,6 +546,47 @@ pointAppsRouter.post(
   },
 );
 
+pointAppsRouter.get(
+  "/weekly-reports",
+  requireAuth,
+  requireRole("eagle"),
+  (req, res) => {
+    const userId = req.authUser!.id;
+    const rows = getDb()
+      .prepare(
+        `SELECT id, week_start, enrollments_count, courses_progressed,
+                points_earned, applications_count, ai_summary, created_at
+         FROM weekly_reports
+         WHERE user_id = ?
+         ORDER BY week_start DESC
+         LIMIT 4`,
+      )
+      .all(userId) as Array<{
+      id: number;
+      week_start: string;
+      enrollments_count: number;
+      courses_progressed: number;
+      points_earned: number;
+      applications_count: number;
+      ai_summary: string | null;
+      created_at: number;
+    }>;
+
+    res.json({
+      reports: rows.map((row) => ({
+        id: row.id,
+        weekStart: row.week_start,
+        enrollmentsCount: row.enrollments_count,
+        coursesProgressed: row.courses_progressed,
+        pointsEarned: row.points_earned,
+        applicationsCount: row.applications_count,
+        aiSummary: row.ai_summary,
+        createdAt: row.created_at,
+      })),
+    });
+  },
+);
+
 pointAppsRouter.get("/points", requireAuth, requireRole("eagle"), (req, res) => {
   const userId = req.authUser!.id;
   const balanceRow = getDb()

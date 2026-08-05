@@ -27,6 +27,7 @@ import {
 import { adminDashboardRouter } from "./routes/admin/dashboard";
 import { adminKbRouter } from "./routes/admin/kb";
 import { adminAiOpsRouter } from "./routes/admin/aiOps";
+import { adminWeeklyReportsRouter } from "./routes/admin/weeklyReports";
 import { kbChatRouter } from "./routes/kbChat";
 import { uploadRouter } from "./routes/upload";
 
@@ -57,6 +58,7 @@ export function createApp() {
   app.use("/api/admin/dashboard", adminDashboardRouter);
   app.use("/api/admin/kb", adminKbRouter);
   app.use("/api/admin/ai-ops", adminAiOpsRouter);
+  app.use("/api/admin/weekly-reports", adminWeeklyReportsRouter);
   app.use("/api/kb-chat", kbChatRouter);
   app.use("/api/admin/upload", uploadRouter);
 
