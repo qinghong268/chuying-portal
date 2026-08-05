@@ -3,16 +3,16 @@ import { formatDateTime } from "../../../lib/datetime";
 import styles from "./TodoQueue.module.css";
 
 interface PendingJoin {
-  id: number; name: string; contact: string; created_at: number;
+  id: number; name: string; contact: string; createdAt: number;
 }
 
 interface PendingPointApp {
-  id: number; type: string; points_requested: number; created_at: number;
-  user_display_name: string; ai_score?: number; ai_action?: string;
+  id: number; type: string; pointsRequested: number; createdAt: number;
+  userDisplayName: string; aiScore?: number; aiAction?: string;
 }
 
 interface ActiveActivity {
-  id: number; title: string; end_at: number; enrollment_count: number;
+  id: number; title: string; endAt: number; enrollmentCount: number;
 }
 
 interface Props {
@@ -55,11 +55,11 @@ export function TodoQueue({ pendingJoins, pendingPointApps, activeActivity }: Pr
             <tbody>
               {pendingPointApps.map(app => (
                 <tr key={app.id} className={styles.row}>
-                  <td><Link to={`/admin/point-apps/${app.id}`}>{app.user_display_name}</Link></td>
+                  <td><Link to={`/admin/point-apps/${app.id}`}>{app.userDisplayName}</Link></td>
                   <td>{app.type === "type1" ? "心得" : "专项"}</td>
-                  <td>{app.points_requested ?? "-"}</td>
-                  <td>{waitTime(app.created_at)}</td>
-                  <td>{aiRiskBadge(app.ai_action)}</td>
+                  <td>{app.pointsRequested ?? "-"}</td>
+                  <td>{waitTime(app.createdAt)}</td>
+                  <td>{aiRiskBadge(app.aiAction)}</td>
                 </tr>
               ))}
             </tbody>
@@ -83,7 +83,7 @@ export function TodoQueue({ pendingJoins, pendingPointApps, activeActivity }: Pr
                 <tr key={j.id} className={styles.row}>
                   <td><Link to={`/admin/join/${j.id}`}>{j.name}</Link></td>
                   <td>{j.contact}</td>
-                  <td>{formatDateTime(j.created_at)}</td>
+                  <td>{formatDateTime(j.createdAt)}</td>
                 </tr>
               ))}
             </tbody>
@@ -96,7 +96,7 @@ export function TodoQueue({ pendingJoins, pendingPointApps, activeActivity }: Pr
         <div className={styles.section}>
           <h3>进行中活动</h3>
           <Link to={`/admin/activities/${activeActivity.id}/enrollments`} className={styles.activeLink}>
-            {activeActivity.title} — {activeActivity.enrollment_count}人报名
+            {activeActivity.title} — {activeActivity.enrollmentCount}人报名
           </Link>
         </div>
       ) : null}

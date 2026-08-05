@@ -8,7 +8,7 @@ interface Props {
   onDayClick?: (dayIndex: number) => void;
 }
 
-function BarChart({ data, color, label, maxY }: { data: Array<{date:string, value:number}>, color: string, label: string, maxY: number }) {
+function BarChart({ data, color, label, maxY, onBarClick }: { data: Array<{date:string, value:number}>, color: string, label: string, maxY: number, onBarClick?: (i: number) => void }) {
   const [hovered, setHovered] = useState<number | null>(null);
   const chartH = 180;
   const padding = { top: 20, bottom: 24, left: 40, right: 16 };
@@ -36,7 +36,13 @@ function BarChart({ data, color, label, maxY }: { data: Array<{date:string, valu
           const x = padding.left + (i / data.length) * w + 4;
           const y = padding.top + h - barH;
           return (
-            <g key={i} onMouseEnter={() => setHovered(i)} onMouseLeave={() => setHovered(null)}>
+            <g
+              key={i}
+              className={onBarClick ? styles.clickable : undefined}
+              onMouseEnter={() => setHovered(i)}
+              onMouseLeave={() => setHovered(null)}
+              onClick={onBarClick ? () => onBarClick(i) : undefined}
+            >
               <rect x={x} y={y} width={barW} height={Math.max(1, barH)} fill={color} rx={3} opacity={hovered === i ? 1 : 0.8} />
               {hovered === i ? (
                 <g>
@@ -67,8 +73,8 @@ export function TrendChart({ dailyStats, onDayClick }: Props) {
     <div className={styles.container}>
       <h3 className={styles.title}>近 7 日趋势</h3>
       <div className={styles.charts}>
-        <BarChart data={enrollData} color="#1a5fb4" label="报名人数" maxY={maxEnroll} />
-        <BarChart data={pointsData} color="#ff6b35" label="积分发放" maxY={maxPoints} />
+        <BarChart data={enrollData} color="#1a5fb4" label="报名人数" maxY={maxEnroll} onBarClick={onDayClick} />
+        <BarChart data={pointsData} color="#ff6b35" label="积分发放" maxY={maxPoints} onBarClick={onDayClick} />
       </div>
     </div>
   );

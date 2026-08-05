@@ -32,22 +32,22 @@ interface DashboardSummary {
     id: number;
     name: string;
     contact: string;
-    created_at: number;
+    createdAt: number;
   }> | null;
   pendingPointApps?: Array<{
     id: number;
     type: string;
-    points_requested: number;
-    created_at: number;
-    user_display_name: string;
-    ai_score?: number;
-    ai_action?: string;
+    pointsRequested: number;
+    createdAt: number;
+    userDisplayName: string;
+    aiScore?: number;
+    aiAction?: string;
   }> | null;
   activeActivity?: {
     id: number;
     title: string;
-    end_at: number;
-    enrollment_count: number;
+    endAt: number;
+    enrollmentCount: number;
   } | null;
   dailyDetail?: Array<{
     date: string;
