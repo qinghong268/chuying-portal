@@ -5,6 +5,9 @@ import type { ContentBlock } from "../api/types";
 import shared from "./shared.module.css";
 import styles from "./AboutPage.module.css";
 
+const DEFAULT_BODY =
+  "雏英计划面向青年人才，提供学习、实践与成长机会。以下为结构占位，终稿文案待运营提供。";
+
 const FAQ = [
   {
     q: "谁可以申请加入雏英计划？",
@@ -49,10 +52,10 @@ export function AboutPage() {
     <div className={`${shared.page} ${shared.container}`}>
       <header>
         <h1 className={shared.pageTitle}>计划介绍</h1>
-        <p className={shared.lead}>
-          {plan?.body ||
-            "雏英计划面向青年人才，提供学习、实践与成长机会。以下为结构占位，终稿文案待运营提供。"}
-        </p>
+        <div
+          className={`${shared.lead} ${shared.richContent}`}
+          dangerouslySetInnerHTML={{ __html: plan?.body || DEFAULT_BODY }}
+        />
       </header>
 
       <section className={shared.section}>
