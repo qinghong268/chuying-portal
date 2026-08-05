@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch --ignore data src/index.ts",
     "build": "tsc && node -e \"require('fs').copyFileSync('src/migrate.sql','dist/migrate.sql')\"",
     "start": "node dist/index.js",
     "test": "vitest run"
@@ -11,6 +11,7 @@
   "dependencies": {
     "@chuying/shared": "*",
     "better-sqlite3": "^11.8.1",
+    "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
@@ -19,6 +20,7 @@
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12",
+    "@types/compression": "^1.8.1",
     "@types/cookie-parser": "^1.4.8",
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.9",

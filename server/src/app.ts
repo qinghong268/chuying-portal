@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import express from "express";
+import compression from "compression";
 import cookieParser from "cookie-parser";
 import { authRouter } from "./routes/auth";
 import { contentRouter } from "./routes/content";
@@ -29,6 +30,7 @@ import { uploadRouter } from "./routes/upload";
 
 export function createApp() {
   const app = express();
+  app.use(compression());
   app.use(express.json());
   app.use(cookieParser());
   app.use("/api/auth", authRouter);
@@ -63,7 +65,25 @@ export function createApp() {
   const clientDist =
     process.env.CLIENT_DIST ?? join(__dirname, "..", "..", "client", "dist");
   if (existsSync(clientDist)) {
-    app.use(express.static(clientDist));
+    // Hashed assets (JS/CSS): cache 1 year
+    app.use(
+      "/assets",
+      express.static(join(clientDist, "assets"), {
+        maxAge: "365d",
+        immutable: true,
+      }),
+    );
+    // Other static: short cache, HTML no-cache
+    app.use(
+      express.static(clientDist, {
+        maxAge: "10m",
+        setHeaders(res, filePath) {
+          if (filePath.endsWith(".html")) {
+            res.setHeader("Cache-Control", "no-cache");
+          }
+        },
+      }),
+    );
     app.get("*", (req, res, next) => {
       if (req.path.startsWith("/api")) {
         next();

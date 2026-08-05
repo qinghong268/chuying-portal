@@ -22,4 +22,17 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom", "react-router-dom"],
+        },
+      },
+    },
+    minify: "esbuild",
+    target: "es2020",
+    cssMinify: true,
+    sourcemap: false,
+  },
 });
