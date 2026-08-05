@@ -1,0 +1,143 @@
+.queue {
+  display: grid;
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+}
+
+.section {
+  background: var(--color-card);
+  border: 1px solid var(--color-border-neutral);
+  border-radius: var(--radius-md);
+  padding: var(--space-md) var(--space-lg);
+  box-shadow: var(--shadow-soft);
+}
+
+.sectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--space-sm);
+}
+
+.section h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+}
+
+.section > h3 {
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--space-sm);
+}
+
+.viewAll {
+  font-size: 0.8rem;
+  color: var(--color-primary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.viewAll:hover {
+  text-decoration: underline;
+}
+
+.empty {
+  margin: var(--space-sm) 0;
+  font-size: 0.85rem;
+  color: var(--color-muted-foreground);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.table th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: var(--color-muted-foreground);
+  padding: var(--space-sm);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: var(--space-sm);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.row {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.row:hover {
+  background: var(--color-muted);
+}
+
+.row:last-child td {
+  border-bottom: none;
+}
+
+.row a {
+  color: var(--color-foreground);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.row a:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.activeLink {
+  display: block;
+  margin-top: var(--space-sm);
+  color: var(--color-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.activeLink:hover {
+  text-decoration: underline;
+}
+
+.riskNone,
+.riskLow,
+.riskMed,
+.riskHigh {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.riskLow {
+  background: rgba(21, 128, 61, 0.1);
+  color: var(--color-success);
+}
+
+.riskMed {
+  background: rgba(255, 107, 53, 0.12);
+  color: var(--color-warning);
+}
+
+.riskHigh {
+  background: rgba(220, 38, 38, 0.1);
+  color: var(--color-destructive);
+}
+
+.riskNone {
+  background: var(--color-muted);
+  color: var(--color-muted-foreground);
+}
