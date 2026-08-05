@@ -7,6 +7,7 @@ import { AdminLayout } from "./layouts/AdminLayout";
 import { HomePage } from "./pages/HomePage";
 import { ContentDetailPage } from "./pages/ContentDetailPage";
 import { AboutPage } from "./pages/AboutPage";
+import { AboutCompanyPage } from "./pages/AboutCompanyPage";
 import { ActivitiesPage } from "./pages/ActivitiesPage";
 import { ActivityDetailPage } from "./pages/ActivityDetailPage";
 import { CoursesPage } from "./pages/CoursesPage";
@@ -46,6 +47,7 @@ export default function App() {
             <Route index element={<HomePage />} />
             <Route path="content/:key" element={<ContentDetailPage />} />
             <Route path="about" element={<AboutPage />} />
+            <Route path="about-company" element={<AboutCompanyPage />} />
             <Route path="activities" element={<ActivitiesPage />} />
             <Route path="activities/:id" element={<ActivityDetailPage />} />
             <Route path="courses" element={<CoursesPage />} />
