@@ -61,11 +61,11 @@ kbChatRouter.post("/", requireAuth, requireRole("eagle"), async (req, res) => {
       [
         {
           role: "system",
-          content: `你是雏英计划的AI智能助手。请根据以下参考资料回答用户的问题。如果参考资料中没有相关信息，请礼貌地告知用户并给出通用建议。回答要简洁、专业、友好。\n\n参考资料：\n${contextStr}`,
+          content: `你是雏英计划的专属AI助手。你的知识来自知识库文档。请根据以下参考资料回答用户的问题。如果问题超出你的知识范围或参考资料中没有相关信息，请诚实告知用户"知识库中没有相关信息"，并建议联系管理员。回答保持简短（100字以内），只提供有用信息，不要编造内容。回答要专业、友好，使用中文。\n\n参考资料：\n${contextStr}`,
         },
         { role: "user", content: question },
       ],
-      { temperature: 0.7, maxTokens: 1000 },
+      { temperature: 0.7, maxTokens: 600 },
     );
 
     res.json({ answer: response });
