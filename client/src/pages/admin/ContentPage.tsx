@@ -80,11 +80,13 @@ export function ContentPage() {
     const start = ta.selectionStart;
     const end = ta.selectionEnd;
     const selected = body.substring(start, end);
+    // Extract just the tag name (e.g. "a href=\"\"" → "a") for the closing tag
+    const tagName = tag.split(/\s+/)[0];
     const replacement = raw
       ? `<${tag}>`
       : selected
-        ? `<${tag}>${selected}</${tag}>`
-        : `<${tag}></${tag}>`;
+        ? `<${tag}>${selected}</${tagName}>`
+        : `<${tag}></${tagName}>`;
     const next = body.substring(0, start) + replacement + body.substring(end);
     setBody(next);
     requestAnimationFrame(() => {

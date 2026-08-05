@@ -123,13 +123,21 @@ export function JoinDetailPage() {
             <div>
               <strong>登录邮箱</strong>
               <p>{account.email}</p>
+              <button type="button" className={shared.btnSecondary} style={{marginTop:4}}
+                onClick={() => { void navigator.clipboard.writeText(account.email); }}>
+                复制邮箱
+              </button>
             </div>
             <div>
               <strong>初始密码</strong>
-              <p>{account.password}</p>
+              <p style={{fontFamily:"monospace",fontSize:"1.1rem",letterSpacing:1}}>{account.password}</p>
+              <button type="button" className={shared.btnAccent} style={{marginTop:4}}
+                onClick={() => { void navigator.clipboard.writeText(account.password); }}>
+                复制密码
+              </button>
             </div>
             <p className={shared.muted}>
-              请立即将以上账号信息告知申请人。密码仅在此显示一次，建议引导申请人尽快登录。
+              请立即将以上账号信息告知申请人。密码仅在此显示一次，离开后不可再查。
             </p>
           </div>
         </div>

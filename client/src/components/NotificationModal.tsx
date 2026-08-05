@@ -57,7 +57,9 @@ export function NotificationModal({
             <h4>📅 即将开始的活动</h4>
             {data.upcomingActivities.map((a) => (
               <p key={a.id}>
-                {a.title} — {new Date(a.start_at).toLocaleDateString()}
+                <Link to={`/activities/${a.id}`} onClick={onClose}>{a.title}</Link>
+                {" — "}{new Date(a.start_at).toLocaleDateString()}{" "}
+                {a.mode === "online" ? "线上" : "线下"}
               </p>
             ))}
           </div>

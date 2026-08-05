@@ -149,13 +149,15 @@ adminPointAppsRouter.use(
 
 adminPointAppsRouter.get("/", (req, res) => {
   const status = typeof req.query.status === "string" ? req.query.status : undefined;
-  let sql = `SELECT * FROM point_applications`;
+  let sql = `SELECT pa.*, u.display_name AS user_display_name, u.email AS user_email
+    FROM point_applications pa
+    JOIN users u ON u.id = pa.user_id`;
   const params: string[] = [];
   if (status) {
-    sql += ` WHERE status = ?`;
+    sql += ` WHERE pa.status = ?`;
     params.push(status);
   }
-  sql += ` ORDER BY created_at DESC`;
+  sql += ` ORDER BY pa.created_at DESC`;
 
   const rows = getDb().prepare(sql).all(...params) as ApplicationRow[];
   res.json({ applications: rows.map(toPublicApplication) });

@@ -3,7 +3,9 @@ import { api } from "../../../api/client";
 import styles from "./AiInsightBar.module.css";
 
 interface InsightData {
-  insight: string;
+  summary: string;
+  alerts: string[];
+  suggestions: string[];
   cached: boolean;
   generatedAt: number;
 }
@@ -53,9 +55,27 @@ export function AiInsightBar() {
         </div>
       </div>
       <div className={styles.content}>
-        {loading ? <p className={styles.loading}>AI 分析中...</p> :
-         error ? <p className={styles.error}>{error}</p> :
-         <p className={styles.text}>{insight?.insight || "暂无洞察数据"}</p>}
+        {loading ? (
+          <p className={styles.loading}>AI 分析中...</p>
+        ) : error ? (
+          <p className={styles.error}>{error}</p>
+        ) : insight ? (
+          <div className={styles.insightBody}>
+            <p className={styles.summary}>{insight.summary}</p>
+            {insight.alerts.length > 0 ? (
+              <ul className={styles.alertList}>
+                {insight.alerts.map((a, i) => <li key={i}>⚠️ {a}</li>)}
+              </ul>
+            ) : null}
+            {insight.suggestions.length > 0 ? (
+              <ul className={styles.suggestionList}>
+                {insight.suggestions.map((s, i) => <li key={i}>💡 {s}</li>)}
+              </ul>
+            ) : null}
+          </div>
+        ) : (
+          <p className={styles.text}>暂无洞察数据</p>
+        )}
       </div>
     </div>
   );

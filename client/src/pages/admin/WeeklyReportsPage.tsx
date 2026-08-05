@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "../../api/client";
 import { formatDateTime } from "../../lib/datetime";
 import shared from "../shared.module.css";
@@ -116,8 +116,8 @@ export function WeeklyReportsPage() {
               </thead>
               <tbody>
                 {weeks.map((week) => (
-                  <>
-                    <tr key={week.weekStart} style={{ cursor: "pointer" }} onClick={() => toggleWeek(week.weekStart)}>
+                  <Fragment key={week.weekStart}>
+                    <tr style={{ cursor: "pointer" }} onClick={() => toggleWeek(week.weekStart)}>
                       <td>{week.weekStart}</td>
                       <td>{week.reports.length} 人</td>
                       <td>
@@ -162,7 +162,7 @@ export function WeeklyReportsPage() {
                         </td>
                       </tr>
                     ) : null}
-                  </>
+                  </Fragment>
                 ))}
               </tbody>
             </table>

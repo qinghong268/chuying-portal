@@ -294,7 +294,7 @@ export function NewApplicationPage() {
                     </p>
                   )}
                 </div>
-              ) : (
+              ) : lockedCourse ? null : (
                 <>
                   <div className={shared.field}>
                     <label htmlFor="activity-select">关联活动（可选，与课程二选一）</label>
@@ -348,7 +348,7 @@ export function NewApplicationPage() {
                     </p>
                   )}
                 </div>
-              ) : (
+              ) : lockedActivity ? null : (
                 <>
                   <div className={shared.field}>
                     <label htmlFor="course-select">关联课程（可选，与活动二选一）</label>

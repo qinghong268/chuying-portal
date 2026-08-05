@@ -95,7 +95,7 @@
 | activityId / activityTitle | 关联活动 |
 | activityMode | online / offline |
 | progressPercent | 线上时展示 |
-| reflection | 心得全文（300–400 字提交约束见 F13） |
+| reflection | 心得全文（300–1000 字提交约束见 F13） |
 
 ### 3.3 类型二 payload
 

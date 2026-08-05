@@ -268,6 +268,9 @@
   color: rgba(255, 255, 255, 0.7);
   font-size: 14px;
   text-align: center;
+}
+
+.heroScrollInner {
   animation: bounce 2s infinite;
 }
 
@@ -281,10 +284,10 @@
 @keyframes bounce {
   0%,
   100% {
-    transform: translateX(-50%) translateY(0);
+    transform: translateY(0);
   }
   50% {
-    transform: translateX(-50%) translateY(-8px);
+    transform: translateY(-8px);
   }
 }
 
@@ -844,7 +847,7 @@
 }
 
 .starCard:hover .starBio {
-  max-height: 260px;
+  max-height: 360px;
   padding: 16px 20px;
   opacity: 1;
   margin-top: 16px;
