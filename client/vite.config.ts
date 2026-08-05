@@ -15,6 +15,11 @@ export default defineConfig({
         target: "http://localhost:5179",
         changeOrigin: true,
       },
+      // Uploaded images are served by the API server; proxy them in dev.
+      "/uploads": {
+        target: "http://localhost:5179",
+        changeOrigin: true,
+      },
     },
   },
 });
