@@ -5,6 +5,7 @@ import {
   datetimeLocalToTs,
   tsToDatetimeLocal,
 } from "../../lib/adminLabels";
+import { ImageUpload } from "../../components/ImageUpload";
 import shared from "../shared.module.css";
 import styles from "./admin.module.css";
 
@@ -174,16 +175,12 @@ export function ActivityEditPage() {
           </div>
           {form.mode === "online" ? (
             <div className={shared.field}>
-              <label htmlFor="act-video-url">视频链接（线上）</label>
-              <input
-                id="act-video-url"
-                type="url"
-                value={form.videoUrl}
-                onChange={(e) => setForm({ ...form, videoUrl: e.target.value })}
-                placeholder="https://example.com/video.mp4"
-                maxLength={2000}
+              <label htmlFor="act-video-url">视频（线上，上传）</label>
+              <ImageUpload
+                currentUrl={form.videoUrl || undefined}
+                onUploaded={(url) => setForm({ ...form, videoUrl: url })}
               />
-              <p className={shared.muted}>线上活动的直播/录播视频地址，留空则前台显示占位。</p>
+              <p className={shared.muted}>线上活动的直播/录播视频，上传后可在线播放（支持 mp4/webm，最大 100MB），留空则前台显示占位。</p>
             </div>
           ) : (
             <div className={shared.field}>

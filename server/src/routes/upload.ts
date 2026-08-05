@@ -19,16 +19,25 @@ const storage = multer.diskStorage({
   },
 });
 
-const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/gif", "image/svg+xml", "image/webp"];
+const ALLOWED_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/gif",
+  "image/svg+xml",
+  "image/webp",
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
+];
 
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
   fileFilter: (_req, file, cb) => {
     if (ALLOWED_TYPES.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error("Only image files are allowed"));
+      cb(new Error("Only image and video files are allowed"));
     }
   },
 });
@@ -44,7 +53,7 @@ uploadRouter.post("/", (req, res) => {
     if (err) {
       if (err instanceof multer.MulterError) {
         if (err.code === "LIMIT_FILE_SIZE") {
-          res.status(400).json({ error: "文件大小不能超过 10MB" });
+          res.status(400).json({ error: "文件大小不能超过 100MB" });
           return;
         }
       }

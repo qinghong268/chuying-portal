@@ -6,6 +6,8 @@ interface Props {
   onUploaded: (url: string) => void;
 }
 
+const VIDEO_EXT = /\.(mp4|webm|mov|m4v|ogv)$/i;
+
 export function ImageUpload({ currentUrl, onUploaded }: Props) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,15 +34,25 @@ export function ImageUpload({ currentUrl, onUploaded }: Props) {
     }
   }
 
+  const isVideo = VIDEO_EXT.test(currentUrl ?? "");
+
   return (
     <div>
       {currentUrl ? (
-        <img src={currentUrl} alt="预览" style={{ maxWidth: 200, maxHeight: 150, display: "block", marginBottom: 8 }} />
+        isVideo ? (
+          <video
+            controls
+            src={currentUrl}
+            style={{ maxWidth: 320, maxHeight: 200, display: "block", marginBottom: 8 }}
+          />
+        ) : (
+          <img src={currentUrl} alt="预览" style={{ maxWidth: 200, maxHeight: 150, display: "block", marginBottom: 8 }} />
+        )
       ) : null}
       <input
         type="file"
         ref={fileRef}
-        accept="image/*"
+        accept="image/*,video/*"
         onChange={(e) => { void handleFile(e); }}
         disabled={uploading}
       />

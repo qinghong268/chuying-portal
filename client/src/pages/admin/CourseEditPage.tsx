@@ -1,6 +1,7 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../../api/client";
+import { ImageUpload } from "../../components/ImageUpload";
 import shared from "../shared.module.css";
 import styles from "./admin.module.css";
 
@@ -128,16 +129,12 @@ export function CourseEditPage() {
             />
           </div>
           <div className={shared.field}>
-            <label htmlFor="course-video-url">视频链接</label>
-            <input
-              id="course-video-url"
-              type="url"
-              value={form.videoUrl}
-              onChange={(e) => setForm({ ...form, videoUrl: e.target.value })}
-              placeholder="https://example.com/course.mp4"
-              maxLength={2000}
+            <label htmlFor="course-video-url">视频（上传）</label>
+            <ImageUpload
+              currentUrl={form.videoUrl || undefined}
+              onUploaded={(url) => setForm({ ...form, videoUrl: url })}
             />
-            <p className={shared.muted}>课程为随时可看的视频，填写后可在线播放。</p>
+            <p className={shared.muted}>课程为随时可看的视频，上传后可在线播放（支持 mp4/webm，最大 100MB）。</p>
           </div>
           <div className={shared.field}>
             <label htmlFor="course-cover-url">封面图片链接</label>
