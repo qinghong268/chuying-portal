@@ -1,0 +1,161 @@
+.profile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.profileHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-md);
+}
+
+.statCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-lg);
+}
+
+.statLabel {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-muted-foreground);
+}
+
+.statValue {
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1.2;
+}
+
+.chartGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg);
+  align-items: start;
+}
+
+.radarPanel,
+.timelinePanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+}
+
+.panelTitle {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.radarSvg {
+  width: 100%;
+  height: auto;
+  max-width: 360px;
+  margin: 0 auto;
+  display: block;
+}
+
+.radarLabel {
+  font-size: 0.82rem;
+  font-weight: 600;
+  fill: var(--color-foreground);
+}
+
+.radarValue {
+  font-size: 0.72rem;
+  font-weight: 700;
+  fill: var(--color-primary);
+}
+
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.timelineItem {
+  display: flex;
+  gap: var(--space-md);
+}
+
+.timelineRail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.timelineDot {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  border: 2px solid var(--color-card);
+  box-shadow: 0 0 0 2px var(--color-primary);
+  margin-top: 4px;
+  flex: 0 0 auto;
+}
+
+.timelineLine {
+  width: 2px;
+  flex: 1 1 auto;
+  min-height: 2rem;
+  background: var(--color-border-neutral);
+  margin: var(--space-xs) 0;
+}
+
+.timelineBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding-bottom: var(--space-lg);
+}
+
+.timelineEvent {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.skeletonCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-lg);
+  border: 1px solid var(--color-border-neutral);
+  border-radius: var(--radius-lg);
+  background: var(--color-card);
+}
+
+.skeleton {
+  height: 1.1rem;
+  background: linear-gradient(90deg, var(--color-muted) 25%, #f0f0f0 50%, var(--color-muted) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+  border-radius: var(--radius-sm);
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (max-width: 900px) {
+  .statsGrid,
+  .chartGrid {
+    grid-template-columns: 1fr;
+  }
+}

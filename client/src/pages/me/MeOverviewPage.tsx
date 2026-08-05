@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "../../api/client";
 import type { PointApplication } from "../../api/types";
 import { useAuth } from "../../auth/AuthContext";
+import { EagleProfile } from "../../components/EagleProfile";
 import shared from "../shared.module.css";
 import styles from "./me.module.css";
 
@@ -23,10 +24,21 @@ interface OverviewData {
   pendingCount: number;
 }
 
+interface Recommendation {
+  id: number;
+  type: "activity" | "course";
+  reason: string;
+}
+
+type OverviewTab = "overview" | "profile";
+
 export function MeOverviewPage() {
   const { user } = useAuth();
   const [data, setData] = useState<OverviewData | null>(null);
   const [weeklyReports, setWeeklyReports] = useState<WeeklyReport[]>([]);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [recommendationsError, setRecommendationsError] = useState(false);
+  const [tab, setTab] = useState<OverviewTab>("overview");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -59,11 +71,50 @@ export function MeOverviewPage() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    let cancelled = false;
+    api<{ recommendations: Recommendation[] }>("/api/me/recommendations")
+      .then((res) => {
+        if (!cancelled) setRecommendations(res.recommendations ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setRecommendationsError(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const displayName = user?.displayName || "雏英";
   const accountStatus = user?.status === "disabled" ? "已禁用" : "正常";
 
   return (
     <>
+      <div className={styles.tabs} role="tablist" aria-label="个人中心">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "overview"}
+          className={`${styles.tab} ${tab === "overview" ? styles.tabActive : ""}`}
+          onClick={() => setTab("overview")}
+        >
+          概览
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "profile"}
+          className={`${styles.tab} ${tab === "profile" ? styles.tabActive : ""}`}
+          onClick={() => setTab("profile")}
+        >
+          学习画像
+        </button>
+      </div>
+
+      {tab === "profile" ? (
+        <EagleProfile />
+      ) : (
+        <>
       <div className={`${shared.panel} ${styles.welcome}`}>
         <div>
           <strong>你好，{displayName}</strong>
@@ -154,6 +205,35 @@ export function MeOverviewPage() {
       </section>
 
       <section className={shared.section}>
+        <h2 className={shared.sectionTitle}>🎯 学习推荐</h2>
+        {recommendationsError ? (
+          <p className={shared.muted}>学习推荐加载失败，请稍后重试。</p>
+        ) : recommendations.length === 0 ? (
+          <p className={shared.muted}>暂无推荐，先去探索活动或课程吧。</p>
+        ) : (
+          <div className={styles.recList}>
+            {recommendations.map((rec, i) => (
+              <article
+                key={`${rec.type}-${rec.id}-${i}`}
+                className={`${shared.panel} ${styles.recCard}`}
+              >
+                <span className={`${styles.badge} ${rec.type === "activity" ? styles.badgeActivity : styles.badgeCourse}`}>
+                  {rec.type === "activity" ? "活动" : "课程"}
+                </span>
+                <p className={styles.recReason}>{rec.reason}</p>
+                <Link
+                  to={rec.type === "activity" ? `/activities/${rec.id}` : `/courses/${rec.id}`}
+                  className={shared.btnGhost}
+                >
+                  去看看
+                </Link>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className={shared.section}>
         <h2 className={shared.sectionTitle}>快捷入口</h2>
         <div className={styles.quickGrid}>
           <Link to="/me/enrollments" className={styles.quickLink}>
@@ -172,6 +252,8 @@ export function MeOverviewPage() {
           ) : null}
         </div>
       </section>
+        </>
+      )}
     </>
   );
 }

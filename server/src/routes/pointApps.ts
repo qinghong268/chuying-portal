@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { getDb } from "../connection";
 import { requireAuth, requireRole } from "../middleware/auth";
+import { deepseekChat } from "../lib/deepseek";
 import { OFFLINE_APPLY_WINDOW_HOURS } from "@chuying/shared";
 import {
   canApplyActivityReflection,
@@ -583,6 +584,205 @@ pointAppsRouter.get(
         aiSummary: row.ai_summary,
         createdAt: row.created_at,
       })),
+    });
+  },
+);
+
+pointAppsRouter.get(
+  "/recommendations",
+  requireAuth,
+  requireRole("eagle"),
+  async (req, res) => {
+    const userId = req.authUser!.id;
+    const db = getDb();
+
+    // Get enrolled activity/course IDs
+    const enrolledActivities = db
+      .prepare(
+        `SELECT activity_id FROM enrollments WHERE user_id = ? AND status = 'enrolled'`,
+      )
+      .all(userId) as Array<{ activity_id: number }>;
+    const enrolledCourses = db
+      .prepare(`SELECT course_id FROM course_enrollments WHERE user_id = ?`)
+      .all(userId) as Array<{ course_id: number }>;
+
+    const activityIds = enrolledActivities.map((r) => r.activity_id);
+    const courseIds = enrolledCourses.map((r) => r.course_id);
+
+    // Get available (not enrolled) activities and courses
+    const now = Date.now();
+    const availableActivities = db
+      .prepare(
+        `SELECT id, title, mode, target_points FROM activities WHERE status = 'published' AND start_at > ? AND id NOT IN (${activityIds.length ? activityIds.map(() => "?").join(",") : "0"}) LIMIT 5`,
+      )
+      .all(now, ...activityIds) as Array<{
+      id: number;
+      title: string;
+      mode: string;
+      target_points: number;
+    }>;
+
+    const availableCourses = db
+      .prepare(
+        `SELECT id, title FROM courses WHERE status = 'published' AND id NOT IN (${courseIds.length ? courseIds.map(() => "?").join(",") : "0"}) LIMIT 5`,
+      )
+      .all(...courseIds) as Array<{ id: number; title: string }>;
+
+    // Get enrolled items for context
+    const enrolledActivityTitles = db
+      .prepare(
+        `SELECT a.title FROM activities a JOIN enrollments e ON e.activity_id = a.id WHERE e.user_id = ? AND e.status = 'enrolled' LIMIT 5`,
+      )
+      .all(userId) as Array<{ title: string }>;
+    const enrolledCourseTitles = db
+      .prepare(
+        `SELECT c.title FROM courses c JOIN course_enrollments ce ON ce.course_id = c.id WHERE ce.user_id = ? LIMIT 5`,
+      )
+      .all(userId) as Array<{ title: string }>;
+
+    try {
+      const context = `该雏英已报名的活动：${enrolledActivityTitles.map((t) => t.title).join("、") || "无"}。已报名的课程：${enrolledCourseTitles.map((t) => t.title).join("、") || "无"}。可推荐的活动：${availableActivities.map((a) => `#${a.id} ${a.title}(${a.mode},${a.target_points}分)`).join("；")}。可推荐的课程：${availableCourses.map((c) => `#${c.id} ${c.title}`).join("；")}。`;
+
+      const response = await deepseekChat(
+        [
+          {
+            role: "system",
+            content:
+              "你是雏英计划学习顾问。根据雏英已学内容和可选内容，推荐3项下一步学习。返回JSON数组：[{id,type:\"activity\"|\"course\",reason}]。reason不超过30字。",
+          },
+          { role: "user", content: context },
+        ],
+        { temperature: 0.6, maxTokens: 400 },
+      );
+
+      const jsonMatch = response.match(/\[[\s\S]*\]/);
+      const recommendations = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+      res.json({ recommendations });
+    } catch {
+      // Fallback: simple rule-based recommendation
+      const recs = [
+        ...availableActivities
+          .slice(0, 2)
+          .map((a) => ({ id: a.id, type: "activity" as const, reason: `新活动：${a.title}` })),
+        ...availableCourses
+          .slice(0, 1)
+          .map((c) => ({ id: c.id, type: "course" as const, reason: `推荐课程：${c.title}` })),
+      ].slice(0, 3);
+      res.json({ recommendations: recs });
+    }
+  },
+);
+
+pointAppsRouter.get(
+  "/profile",
+  requireAuth,
+  requireRole("eagle"),
+  (req, res) => {
+    const userId = req.authUser!.id;
+    const db = getDb();
+
+    // Points by template type (for radar chart)
+    const templatePoints = db
+      .prepare(
+        `SELECT pt.code, pt.name, pt.default_points AS target,
+                COALESCE(SUM(pl.delta), 0) AS earned
+         FROM point_type_templates pt
+         LEFT JOIN point_applications pa ON pa.template_code = pt.code AND pa.user_id = ? AND pa.status = 'approved'
+         LEFT JOIN point_ledger pl ON pl.application_id = pa.id AND pl.user_id = ?
+         WHERE pt.enabled = 1
+         GROUP BY pt.code ORDER BY pt.id`,
+      )
+      .all(userId, userId) as Array<{
+      code: string;
+      name: string;
+      target: number;
+      earned: number;
+    }>;
+
+    const radar = templatePoints.map((t) => ({
+      label: t.name,
+      value: t.target > 0 ? Math.min(100, Math.round((t.earned / t.target) * 100)) : 0,
+      earned: t.earned,
+    }));
+
+    // Milestones
+    const milestones: Array<{ date: number; event: string }> = [];
+    const firstEnrollment = db
+      .prepare(
+        `SELECT enrolled_at FROM enrollments WHERE user_id = ? ORDER BY enrolled_at ASC LIMIT 1`,
+      )
+      .get(userId) as { enrolled_at: number } | undefined;
+    const firstApplication = db
+      .prepare(
+        `SELECT created_at FROM point_applications WHERE user_id = ? ORDER BY created_at ASC LIMIT 1`,
+      )
+      .get(userId) as { created_at: number } | undefined;
+    const firstPoints = db
+      .prepare(
+        `SELECT created_at FROM point_ledger WHERE user_id = ? AND delta > 0 ORDER BY created_at ASC LIMIT 1`,
+      )
+      .get(userId) as { created_at: number } | undefined;
+    const totalPoints = (
+      db
+        .prepare(
+          `SELECT COALESCE(SUM(CASE WHEN delta > 0 THEN delta ELSE 0 END), 0) AS p FROM point_ledger WHERE user_id = ?`,
+        )
+        .get(userId) as { p: number }
+    ).p;
+    const joinDate = (
+      db.prepare(`SELECT created_at FROM users WHERE id = ?`).get(userId) as {
+        created_at: number;
+      }
+    ).created_at;
+
+    if (joinDate) milestones.push({ date: joinDate, event: "加入雏英计划" });
+    if (firstEnrollment)
+      milestones.push({ date: firstEnrollment.enrolled_at, event: "首次报名活动" });
+    if (firstApplication)
+      milestones.push({ date: firstApplication.created_at, event: "首次提交积分申请" });
+    if (firstPoints)
+      milestones.push({ date: firstPoints.created_at, event: "首次获得积分" });
+    if (totalPoints >= 100) {
+      const hundred = db
+        .prepare(
+          `SELECT created_at FROM point_ledger WHERE user_id = ? AND delta > 0 AND balance_after >= 100 ORDER BY created_at ASC LIMIT 1`,
+        )
+        .get(userId) as { created_at: number } | undefined;
+      if (hundred) milestones.push({ date: hundred.created_at, event: "积分突破 100" });
+    }
+    if (totalPoints >= 500) {
+      const fiveHundred = db
+        .prepare(
+          `SELECT created_at FROM point_ledger WHERE user_id = ? AND delta > 0 AND balance_after >= 500 ORDER BY created_at ASC LIMIT 1`,
+        )
+        .get(userId) as { created_at: number } | undefined;
+      if (fiveHundred)
+        milestones.push({ date: fiveHundred.created_at, event: "积分突破 500" });
+    }
+
+    // Stats
+    const enrollmentCount = (
+      db
+        .prepare(
+          `SELECT COUNT(*) AS c FROM enrollments WHERE user_id = ? AND status = 'enrolled'`,
+        )
+        .get(userId) as { c: number }
+    ).c;
+    const courseCount = (
+      db
+        .prepare(`SELECT COUNT(*) AS c FROM course_enrollments WHERE user_id = ?`)
+        .get(userId) as { c: number }
+    ).c;
+    const appCount = (
+      db
+        .prepare(`SELECT COUNT(*) AS c FROM point_applications WHERE user_id = ?`)
+        .get(userId) as { c: number }
+    ).c;
+
+    res.json({
+      radar,
+      milestones: milestones.sort((a, b) => a.date - b.date),
+      stats: { totalPoints, enrollmentCount, courseCount, appCount, joinDate },
     });
   },
 );
