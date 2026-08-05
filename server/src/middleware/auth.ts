@@ -112,10 +112,14 @@ export function requireRole(...roles: UserRole[]) {
 
 export function authCookieOptions() {
   const isProd = process.env.NODE_ENV === "production";
+  // COOKIE_SECURE=true|false 显式控制；未设置时 HTTPS 环境或生产才 Secure
+  const secure = process.env.COOKIE_SECURE === "true" ? true
+    : process.env.COOKIE_SECURE === "false" ? false
+    : isProd;
   return {
     httpOnly: true,
     sameSite: "lax" as const,
-    secure: isProd,
+    secure,
     path: "/",
     maxAge: 7 * 24 * 60 * 60 * 1000,
   };

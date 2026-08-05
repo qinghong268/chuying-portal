@@ -25,6 +25,7 @@ function badgeClass(status: ApplicationStatus): string {
 interface AdminPointApplicationListItem {
   id: number;
   userId: number;
+  userDisplayName?: string | null;
   type: ApplicationType;
   templateCode: string | null;
   pointsRequested: number | null;
@@ -98,7 +99,7 @@ export function PointAppsListPage() {
               <tr>
                 <th>编号</th>
                 <th>类型</th>
-                <th>用户 ID</th>
+                <th>申请人</th>
                 <th>申请分值</th>
                 <th>提交时间</th>
                 <th>状态</th>
@@ -115,7 +116,7 @@ export function PointAppsListPage() {
                       app.templateCode,
                     )}
                   </td>
-                  <td>{app.userId ?? "—"}</td>
+                  <td>{app.userDisplayName ?? `用户 #${app.userId}`}</td>
                   <td>{app.pointsRequested ?? "—"}</td>
                   <td>{formatDateTime(app.createdAt)}</td>
                   <td>

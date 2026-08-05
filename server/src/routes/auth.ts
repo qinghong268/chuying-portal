@@ -145,7 +145,7 @@ authRouter.post("/logout", (_req, res) => {
   res.clearCookie(AUTH_COOKIE_NAME, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: authCookieOptions().secure,
     path: "/",
   });
   res.json({ ok: true });
