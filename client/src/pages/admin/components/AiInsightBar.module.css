@@ -1,0 +1,116 @@
+.bar {
+  background: linear-gradient(135deg, #e8f0fb 0%, #d4e4f7 55%, #c7dcf4 100%);
+  border: 1px solid #bcd2ef;
+  border-radius: var(--radius-lg);
+  padding: var(--space-md) var(--space-lg);
+  margin-bottom: var(--space-lg);
+  box-shadow: 0 2px 8px rgba(26, 95, 180, 0.08);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--color-primary);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-xs);
+  align-items: center;
+}
+
+.btn {
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-card);
+  color: var(--color-primary);
+  padding: 0.3rem 0.8rem;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary-hover);
+  background: var(--color-muted);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.content {
+  margin-top: var(--space-sm);
+}
+
+.text {
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--color-foreground);
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.loading {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--color-muted-foreground);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.error {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--color-destructive);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.collapsed {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  background: linear-gradient(135deg, #e8f0fb 0%, #d4e4f7 100%);
+  border: 1px solid #bcd2ef;
+  border-radius: var(--radius-lg);
+  padding: var(--space-sm) var(--space-lg);
+  margin-bottom: var(--space-lg);
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--color-primary);
+  transition: box-shadow 0.15s;
+}
+
+.collapsed:hover {
+  box-shadow: 0 2px 8px rgba(26, 95, 180, 0.15);
+}
+
+.expandBtn {
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: var(--color-primary);
+  padding: 0.2rem 0.4rem;
+}
+
+.expandBtn:hover {
+  text-decoration: underline;
+}
