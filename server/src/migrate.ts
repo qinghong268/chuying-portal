@@ -69,6 +69,22 @@ function migrateContentBlockSummaryColumn(): void {
   addColumnIfMissing("content_blocks", "summary", "TEXT");
 }
 
+function migrateAiReviewsTable(): void {
+  getDb().exec(`
+    CREATE TABLE IF NOT EXISTS ai_reviews (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      application_id INTEGER NOT NULL UNIQUE REFERENCES point_applications(id) ON DELETE CASCADE,
+      score INTEGER NOT NULL,
+      relevance INTEGER NOT NULL,
+      suggestion TEXT NOT NULL,
+      recommended_action TEXT NOT NULL,
+      suggested_points INTEGER,
+      draft_reject_reason TEXT,
+      created_at INTEGER NOT NULL
+    );
+  `);
+}
+
 export function migrate(): void {
   const sql = readFileSync(join(__dirname, "migrate.sql"), "utf8");
   getDb().exec(sql);
@@ -80,4 +96,5 @@ export function migrate(): void {
   migrateCourseExtendedColumns();
   migratePointAppCourseId();
   migrateContentBlockSummaryColumn();
+  migrateAiReviewsTable();
 }

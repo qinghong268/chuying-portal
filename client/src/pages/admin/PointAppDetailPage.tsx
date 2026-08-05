@@ -11,6 +11,16 @@ import { formatDateTime } from "../../lib/datetime";
 import shared from "../shared.module.css";
 import styles from "./admin.module.css";
 
+interface AiReview {
+  score: number;
+  relevance: number;
+  suggestion: string;
+  recommendedAction: "approve" | "reject" | "review";
+  suggestedPoints: number | null;
+  draftRejectReason: string | null;
+  createdAt: number;
+}
+
 interface AdminPointApplication {
   id: number;
   userId: number;
@@ -31,6 +41,29 @@ interface AdminPointApplication {
   activityTitle: string | null;
   activityMode: "online" | "offline" | null;
   courseTitle: string | null;
+  aiReview: AiReview | null;
+}
+
+function recommendedActionLabel(action: AiReview["recommendedAction"]): string {
+  switch (action) {
+    case "approve":
+      return "建议通过";
+    case "reject":
+      return "建议驳回";
+    case "review":
+      return "建议人工复核";
+  }
+}
+
+function recommendedActionBadge(action: AiReview["recommendedAction"]): string {
+  switch (action) {
+    case "approve":
+      return styles.badgeApproved;
+    case "reject":
+      return styles.badgeRejected;
+    case "review":
+      return styles.badgePending;
+  }
 }
 
 export function PointAppDetailPage() {
@@ -42,6 +75,9 @@ export function PointAppDetailPage() {
   const [pointsGranted, setPointsGranted] = useState("");
   const [reason, setReason] = useState("");
   const [acting, setActing] = useState(false);
+  const [aiReview, setAiReview] = useState<AiReview | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -53,6 +89,7 @@ export function PointAppDetailPage() {
       );
       setApp(res.application);
       setPointsGranted(String(res.application.pointsRequested ?? ""));
+      setAiReview(res.application.aiReview ?? null);
     } catch {
       setError("申请不存在或加载失败");
     } finally {
@@ -63,6 +100,23 @@ export function PointAppDetailPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  async function generateAiReview() {
+    if (!id) return;
+    setAiLoading(true);
+    setAiError(null);
+    try {
+      const res = await api<{ aiReview: AiReview }>(
+        `/api/admin/point-applications/${id}/ai-review`,
+        { method: "POST" },
+      );
+      setAiReview(res.aiReview);
+    } catch (e) {
+      setAiError(e instanceof Error ? e.message : "AI 审核生成失败");
+    } finally {
+      setAiLoading(false);
+    }
+  }
 
   async function approve() {
     if (!id) return;
@@ -211,6 +265,89 @@ export function PointAppDetailPage() {
           </details>
         </div>
       </div>
+
+      <details
+        className={`${shared.panel} ${styles.aiDetails}`}
+        open={aiReview != null || aiLoading || aiError != null}
+      >
+        <summary className={styles.aiSummary}>
+          <span>AI 参考意见</span>
+          <button
+            type="button"
+            className={shared.btnSecondary}
+            disabled={aiLoading}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              void generateAiReview();
+            }}
+          >
+            {aiLoading ? "生成中…" : aiReview ? "重新生成建议" : "生成 AI 建议"}
+          </button>
+        </summary>
+        <div className={styles.aiBody}>
+          {aiError ? <p className={shared.error}>{aiError}</p> : null}
+          {aiLoading ? (
+            <p className={shared.muted}>AI 正在审核心得，可能需要几秒钟…</p>
+          ) : aiReview ? (
+            <>
+              <div className={styles.aiScoreRow}>
+                <span className={styles.aiScoreLabel}>质量评分</span>
+                <div className={styles.aiScoreBar}>
+                  <div
+                    className={styles.aiScoreFill}
+                    style={{ width: `${aiReview.score * 10}%` }}
+                  />
+                </div>
+                <span className={styles.aiScoreValue}>{aiReview.score}/10</span>
+              </div>
+              <div className={styles.aiScoreRow}>
+                <span className={styles.aiScoreLabel}>主题相关度</span>
+                <div className={styles.aiScoreBar}>
+                  <div
+                    className={styles.aiScoreFill}
+                    style={{ width: `${aiReview.relevance * 10}%` }}
+                  />
+                </div>
+                <span className={styles.aiScoreValue}>{aiReview.relevance}/10</span>
+              </div>
+              <div>
+                <strong>审核建议</strong>
+                <p>{aiReview.suggestion}</p>
+              </div>
+              <div>
+                <strong>推荐处理</strong>
+                <p>
+                  <span
+                    className={`${styles.badge} ${recommendedActionBadge(aiReview.recommendedAction)}`}
+                  >
+                    {recommendedActionLabel(aiReview.recommendedAction)}
+                  </span>
+                </p>
+              </div>
+              {aiReview.suggestedPoints != null ? (
+                <div>
+                  <strong>建议积分</strong>
+                  <p>{aiReview.suggestedPoints}</p>
+                </div>
+              ) : null}
+              {aiReview.draftRejectReason ? (
+                <div>
+                  <strong>驳回原因草稿</strong>
+                  <p>{aiReview.draftRejectReason}</p>
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <p className={shared.muted}>
+              点击「生成 AI 建议」，由 DeepSeek 辅助审核该申请。
+            </p>
+          )}
+          <p className={styles.aiWarning}>
+            AI 建议仅供参考，最终审核决策由管理员做出。
+          </p>
+        </div>
+      </details>
 
       {app.status === "pending" ? (
         <div className={shared.panel} style={{ marginTop: "var(--space-lg)" }}>

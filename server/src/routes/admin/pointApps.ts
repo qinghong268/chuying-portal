@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getDb } from "../../connection";
 import { requireAuth, requireRole } from "../../middleware/auth";
 import { requirePermission } from "../../middleware/requirePermission";
+import { generateAiReview } from "../../lib/aiReview";
 
 interface ApplicationRow {
   id: number;
@@ -24,7 +25,30 @@ interface ApplicationRow {
   user_display_name?: string;
   activity_title?: string | null;
   activity_mode?: string | null;
+  activity_description?: string | null;
   course_title?: string | null;
+  course_description?: string | null;
+  // joined AI review fields (null when no review exists)
+  ai_review_id?: number | null;
+  ai_score?: number | null;
+  ai_relevance?: number | null;
+  ai_suggestion?: string | null;
+  ai_recommended_action?: string | null;
+  ai_suggested_points?: number | null;
+  ai_draft_reject_reason?: string | null;
+  ai_created_at?: number | null;
+}
+
+interface AiReviewRow {
+  id: number;
+  application_id: number;
+  score: number;
+  relevance: number;
+  suggestion: string;
+  recommended_action: string;
+  suggested_points: number | null;
+  draft_reject_reason: string | null;
+  created_at: number;
 }
 
 function parsePayload(raw: string): Record<string, unknown> {
@@ -35,7 +59,33 @@ function parsePayload(raw: string): Record<string, unknown> {
   }
 }
 
+function toPublicAiReview(row: AiReviewRow | undefined | null) {
+  if (!row) return null;
+  return {
+    score: row.score,
+    relevance: row.relevance,
+    suggestion: row.suggestion,
+    recommendedAction: row.recommended_action,
+    suggestedPoints: row.suggested_points,
+    draftRejectReason: row.draft_reject_reason,
+    createdAt: row.created_at,
+  };
+}
+
 function toPublicApplication(row: ApplicationRow) {
+  const aiReview =
+    row.ai_review_id != null
+      ? {
+          score: row.ai_score,
+          relevance: row.ai_relevance,
+          suggestion: row.ai_suggestion,
+          recommendedAction: row.ai_recommended_action,
+          suggestedPoints: row.ai_suggested_points,
+          draftRejectReason: row.ai_draft_reject_reason,
+          createdAt: row.ai_created_at,
+        }
+      : null;
+
   return {
     id: row.id,
     userId: row.user_id,
@@ -56,18 +106,24 @@ function toPublicApplication(row: ApplicationRow) {
     activityTitle: row.activity_title ?? null,
     activityMode: row.activity_mode ?? null,
     courseTitle: row.course_title ?? null,
+    aiReview,
   };
 }
 
 const APPLICATION_DETAIL_SQL = `
   SELECT pa.*,
          u.email AS user_email, u.display_name AS user_display_name,
-         a.title AS activity_title, a.mode AS activity_mode,
-         c.title AS course_title
+         a.title AS activity_title, a.mode AS activity_mode, a.description AS activity_description,
+         c.title AS course_title, c.description AS course_description,
+         ar.id AS ai_review_id, ar.score AS ai_score, ar.relevance AS ai_relevance,
+         ar.suggestion AS ai_suggestion, ar.recommended_action AS ai_recommended_action,
+         ar.suggested_points AS ai_suggested_points,
+         ar.draft_reject_reason AS ai_draft_reject_reason, ar.created_at AS ai_created_at
   FROM point_applications pa
   JOIN users u ON u.id = pa.user_id
   LEFT JOIN activities a ON a.id = pa.activity_id
   LEFT JOIN courses c ON c.id = pa.course_id
+  LEFT JOIN ai_reviews ar ON ar.application_id = pa.id
   WHERE pa.id = ?
 `;
 
@@ -120,6 +176,80 @@ adminPointAppsRouter.get("/:id", (req, res) => {
   }
 
   res.json({ application: toPublicApplication(row) });
+});
+
+// POST /:id/ai-review — Generate AI review for a point application
+adminPointAppsRouter.post("/:id/ai-review", async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id < 1) {
+    res.status(400).json({ error: "Invalid application id" });
+    return;
+  }
+
+  const row = getApplicationById(id);
+
+  if (!row) {
+    res.status(404).json({ error: "Application not found" });
+    return;
+  }
+
+  const payload = parsePayload(row.payload);
+  const reflection = typeof payload.reflection === "string" ? payload.reflection : "";
+
+  if (!reflection) {
+    res.status(400).json({ error: "Application has no reflection to review" });
+    return;
+  }
+
+  const activityTitle =
+    row.activity_title ?? row.course_title ?? "（未关联活动/课程）";
+  const activityDescription =
+    row.activity_description ?? row.course_description ?? "";
+
+  try {
+    const result = await generateAiReview({
+      activityTitle,
+      activityDescription,
+      reflection,
+      targetPoints: row.points_requested ?? 0,
+      applicantName: row.user_display_name ?? `用户 #${row.user_id}`,
+    });
+
+    const now = Date.now();
+    getDb()
+      .prepare(
+        `INSERT INTO ai_reviews
+         (application_id, score, relevance, suggestion, recommended_action, suggested_points, draft_reject_reason, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(application_id) DO UPDATE SET
+           score = excluded.score,
+           relevance = excluded.relevance,
+           suggestion = excluded.suggestion,
+           recommended_action = excluded.recommended_action,
+           suggested_points = excluded.suggested_points,
+           draft_reject_reason = excluded.draft_reject_reason,
+           created_at = excluded.created_at`,
+      )
+      .run(
+        id,
+        Math.max(1, Math.min(10, Math.round(result.score))),
+        Math.max(1, Math.min(10, Math.round(result.relevance))),
+        result.suggestion ?? "",
+        result.recommendedAction ?? "review",
+        result.suggestedPoints ?? null,
+        result.draftRejectReason ?? null,
+        now,
+      );
+
+    const aiRow = getDb()
+      .prepare(`SELECT * FROM ai_reviews WHERE application_id = ?`)
+      .get(id) as AiReviewRow;
+
+    res.json({ aiReview: toPublicAiReview(aiRow) });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "未知错误";
+    res.status(502).json({ error: `AI 审核生成失败：${message}` });
+  }
 });
 
 adminPointAppsRouter.post("/:id/approve", (req, res) => {
